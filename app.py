@@ -11,7 +11,6 @@ def login():
     username = request.form.get("username")
     password = request.form.get("password")
 
-    # For now, just return the username (you can add real login logic later)
     return f"Hello, {username}! You tried to log in."
 
 if __name__ == "__main__":
