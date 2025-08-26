@@ -6,12 +6,16 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            margin: 0;
+            min-height: 100vh;
             background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .container {
-            max-width: 600px;
-            margin: auto;
+            max-width: 400px;
+            width: 100%;
             background: #000000;
             padding: 32px;
             border-radius: 8px;
@@ -20,15 +24,49 @@
         }
         h1 {    
             color: #ffffff;
+            margin-bottom: 24px;
         }
-        p {
-            color: #555;
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            background: #007bff;
+            color: #ffffff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        input[type="submit"]:hover {
+            background: #0056b3;
+        }
+        .footer {
+            margin-top: 24px;
+            color: #777;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>STILL IN PROGRESS!</h1>
+        <h1>Welcome To Rented</h1>
+        <form>
+            <input type="text" placeholder="Username" required>
+            <input type="password" placeholder="Password" required>
+            <input type="submit" value="Login">
+        </form>
+        <div class="footer">
+            &copy; 2025 Rented. All rights reserved.
+        </div>
     </div>
 </body>
 </html>
