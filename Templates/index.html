@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Home Page</title>
+    <title>{{ title }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,11 +12,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding-top: 64px;
         }
         .container {
             max-width: 400px;
             width: 100%;
-            background: #000000;
+            background: #000000; /* content background stays black */
             padding: 32px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -31,7 +32,7 @@
             flex-direction: column;
             gap: 16px;
         }
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], input[type="email"] {
             padding: 10px;
             border-radius: 4px;
             border: 1px solid #ccc;
@@ -54,19 +55,182 @@
             color: #777;
             font-size: 14px;
         }
+        nav {
+            width: 100%;
+            background: #444;
+            padding: 16px 32px; /* add horizontal padding */
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 16px; /* reduced gap between Rented, About, Contact */
+            margin: 0;
+            padding: 0;
+        }
+        nav .nav-right {
+            margin-left: auto;
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            padding-right: 32px; /* add space to the right side */
+        }
+        nav ul li a {
+            color: #fff; /* words are now white */
+            text-decoration: none;
+            font-size: 18px;
+            transition: color 0.2s, background 0.2s;
+            padding-bottom: 4px;
+            border-bottom: none;
+            border: none; /* removed blue border */
+            border-radius: 4px;
+            padding: 6px 16px;
+            background: #000;
+            margin-right: 4px;
+        }
+        nav ul li a:hover {
+            color: #007bff;
+            background: #111;
+        }
+        nav .nav-right a {
+            color: #fff; /* words are now white */
+            text-decoration: none;
+            font-size: 16px;
+            border: none; /* removed blue border */
+            border-radius: 4px;
+            padding: 6px 16px;
+            background: #000;
+            text-align: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        nav .nav-right a:hover {
+            background: #111;
+            color: #007bff;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .listing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .listing-card {
+            background: #111;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            padding: 16px;
+            color: #fff;
+            text-align: left;
+            transition: box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .listing-card:hover {
+            box-shadow: 0 4px 16px rgba(0,123,255,0.2);
+            border: 1px solid #007bff;
+        }
+        .listing-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            background: #222;
+        }
+        .listing-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .listing-price {
+            color: #007bff;
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+        .listing-desc {
+            font-size: 13px;
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome To Rented</h1>
+    <nav>
+        <ul>
+            <li><a href="#" onclick="showSection('homepage')">Rented</a></li>
+        </ul>
+        <div class="nav-right">
+            <a href="#" onclick="showSection('login')">Login</a>
+            <a href="#" onclick="showSection('signup')">Sign Up</a>
+        </div>
+    </nav>
+    <div id="homepage" class="container section active">
+        <h1>Rented Marketplace</h1>
+        <p style="color:#fff;">Browse available rentals and properties below.</p>
+        <div class="listing-grid">
+            <div class="listing-card" style="display: flex; align-items: center; justify-content: center; height: 120px;">
+                <span style="color:#ccc; font-size: 18px;">Listings coming soon...</span>
+            </div>
+            <div class="listing-card" style="display: flex; align-items: center; justify-content: center; height: 120px;">
+                <span style="color:#ccc; font-size: 18px;">Listings coming soon...</span>
+            </div>
+            <div class="listing-card" style="display: flex; align-items: center; justify-content: center; height: 120px;">
+                <span style="color:#ccc; font-size: 18px;">Listings coming soon...</span>
+            </div>
+            <div class="listing-card" style="display: flex; align-items: center; justify-content: center; height: 120px;">
+                <span style="color:#ccc; font-size: 18px;">Listings coming soon...</span>
+            </div>
+        </div>
+        <div class="footer">
+            &copy; 2025 Rented. All rights reserved.
+        </div>
+    </div>
+    <div id="login" class="container section">
+        <h1>Login</h1>
         <form>
             <input type="text" placeholder="Username" required>
             <input type="password" placeholder="Password" required>
             <input type="submit" value="Login">
         </form>
+        <div style="margin-top:16px;">
+            <span style="color:#fff;">Don't have an account?</span>
+            <a href="#" onclick="showSection('signup')" style="color:#007bff;">Sign Up</a>
+        </div>
         <div class="footer">
             &copy; 2025 Rented. All rights reserved.
         </div>
     </div>
+    <div id="signup" class="container section">
+        <h1>Sign Up</h1>
+        <form>
+            <input type="text" placeholder="Username" required>
+            <input type="email" placeholder="Email" required>
+            <input type="password" placeholder="Password" required>
+            <input type="submit" value="Sign Up">
+        </form>
+        <div style="margin-top:16px;">
+            <span style="color:#fff;">Already have an account?</span>
+            <a href="#" onclick="showSection('login')" style="color:#007bff;">Login</a>
+        </div>
+        <div class="footer">
+            &copy; 2025 Rented. All rights reserved.
+        </div>
+    </div>
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(function(sec) {
+                sec.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+        }
+    </script>
 </body>
 </html>
