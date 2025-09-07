@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Rented</title>
+    <style>
+        body {font-family: Arial, sans-serif; margin: 0; min-height: 100vh; background: #000; display: flex; flex-direction: column;}
+        .container {flex: 1; max-width: 1000px; width: 100%; margin: 80px auto 32px auto; background: #000; padding: 32px; border-radius: 8px; color: #fff;}
+        h1 {color: #fff; margin-bottom: 24px;}
+        nav {width: 100%; background: #444; padding: 16px 32px; position: fixed; top: 0; left: 0; z-index: 10; display: flex;}
+        nav ul {list-style: none; display: flex; margin: 0; padding: 0;}
+        nav .nav-right {margin-left: auto; display: flex; gap: 8px; padding-right: 32px;}
+        nav ul li a, nav .nav-right a {color: #fff; text-decoration: none; font-size: 16px; border-radius: 4px; padding: 6px 16px; background: #000;}
+        nav ul li a:hover, nav .nav-right a:hover {color: #007bff; background: #111;}
+        .dashboard-section {margin-bottom: 32px;}
+        .card {background: #111; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.5);}
+        .card h2 {margin-top: 0; color: #007bff;}
+        .footer {margin-top: 24px; color: #777; font-size: 14px; text-align: center;}
+        table {width: 100%; border-collapse: collapse; margin-top: 16px;}
+        table th, table td {border: 1px solid #333; padding: 12px; text-align: left; color: #fff;}
+        table th {background: #111;}
+        table tr:nth-child(even) {background: #222;}
+        .btn {display: inline-block; padding: 8px 16px; margin-top: 10px; background: #007bff; color: #fff; border: none; border-radius: 4px; text-decoration: none;}
+        .btn:hover {background: #0056b3;}
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <h1 style="text-align: center;">Admin Dashboard</h1>
+
+        <div class="dashboard-section">
+            <div class="card">
+                <h2>User Management</h2>
+                <p>View and manage registered users.</p>
+                <table>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                    <tr>
+                        <td>john_doe</td>
+                        <td>john@example.com</td>
+                        <td>User</td>
+                        <td>
+                            <a href="#" class="btn">Edit</a>
+                            <a href="#" class="btn">Delete</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>admin_user</td>
+                        <td>admin@example.com</td>
+                        <td>Admin</td>
+                        <td>
+                            <a href="#" class="btn">Edit</a>
+                            <a href="#" class="btn">Delete</a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Reports</h2>
+                <p>Generate system and usage reports.</p>
+                <a href="#" class="btn">Generate Report</a>
+            </div>
+
+            <div class="card">
+                <h2>Settings</h2>
+                <p>Manage system preferences and configurations.</p>
+                <a href="#" class="btn">Go to Settings</a>
+            </div>
+        </div>
+
+        <div class="footer">&copy; 2025 Rented. All rights reserved.</div>
+    </div>
+</body>
+</html>
