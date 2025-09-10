@@ -51,8 +51,12 @@ def login():
             error = "Incorrect username or password!"
 
     return render_template("login.html", title="Login", error=error)
-
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()  
-    app.run(debug=True)
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "initdb":
+        with app.app_context():
+            db.create_all()
+    else:
+        app.run(debug=True)
+
