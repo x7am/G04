@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile - Rented</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            flex: 1;
+            max-width: 800px;
+            width: 100%;
+            margin: 80px auto 32px auto;
+            background: #000;
+            padding: 32px;
+            border-radius: 8px;
+            color: #fff;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        nav {
+            width: 100%;
+            background: #222;
+            padding: 16px 32px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            display: flex;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+        nav .nav-right {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            padding-right: 32px;
+        }
+        nav ul li a, nav .nav-right a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 4px;
+            padding: 6px 16px;
+            background: #000;
+        }
+        nav ul li a:hover, nav .nav-right a:hover {
+            color: #fff;
+            background: #730000;
+        }
+        .card {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #730000;
+        }
+        .footer {
+            margin-top: 24px;
+            color: #777;
+            font-size: 14px;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+            color: #ccc;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #730000;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 16px;
+            background: #730000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #5a0000;
+        }
+        .profile-info {
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <h1>User Profile & Settings</h1>
+
+        <div class="card">
+            <h2>Profile Information</h2>
+            <div class="profile-info">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Role:</strong> {{ user.role }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Edit Profile</h2>
+            <form action="/update-profile" method="POST" enctype="multipart/form-data">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{ user.username }}">
+
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{ user.email }}">
+
+                <label for="bio">Bio</label>
+                <textarea id="bio" name="bio" rows="4" placeholder="Write something about yourself...">{{ user.bio }}</textarea>
+
+                <label for="profile_pic">Profile Picture</label>
+                <input type="file" id="profile_pic" name="profile_pic" accept="image/*">
+
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Change Password</h2>
+            <form action="/update-password" method="POST">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" placeholder="Enter current password" required>
+
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" placeholder="Enter new password" required>
+
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password" required>
+
+                <button type="submit" class="btn">Update Password</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Danger Zone</h2>
+            <p style="color: #f55;">Once you delete your account, there is no going back. Please be certain.</p>
+            <form action="/delete-account" method="POST" onsubmit="return confirm('Are you sure you want to delete your account?');">
+                <button type="submit" class="btn" style="background:#f55;">Delete Account</button>
+            </form>
+        </div>
+
+        <div class="footer">&copy; 2025 Rented. All rights reserved.</div>
+    </div>
+</body>
+</html>

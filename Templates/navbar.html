@@ -1,38 +1,106 @@
 <nav class="navbar">
-  <div class="nav-left">
-    <a href="{{ url_for('home') }}" class="logo">Rented</a>
-  </div>
-
-  <div class="nav-right">
-    <a href="{{ url_for('login') }}">Login</a>
-    <a href="{{ url_for('signup') }}">Sign Up</a>
-  </div>
+    <div class="nav-left">
+        <a href="{{ url_for('home') }}" class="logo">Rented</a>
+    </div>
+    <div class="nav-right">
+        {% if session.get('user_id') %}
+        <div class="dropdown">
+            <img src="{{ url_for('static', filename='profile_pics/' ~ user.profile_pic) }}" 
+                 alt="Profile" class="profile-pic" onclick="toggleDropdown()">
+            <div id="dropdownMenu" class="dropdown-menu">
+                <a href="{{ url_for('profile') }}">
+                    <span>⚙️</span> Edit Profile
+                </a>
+                <a href="{{ url_for('logout') }}">
+                    <span>🚪</span> Logout
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('signup') }}">Sign Up</a>
+        {% endif %}
+    </div>
 </nav>
 
 <style>
-  .navbar {
+.navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 12px 20px;
     background-color: #730000;
     border-bottom: 1px solid #ddd;
-  }
-
-  .navbar a {
+}
+.navbar a {
     text-decoration: none;
     color: #ffffff;
     margin-left: 15px;
     font-weight: 500;
-  }
-
-  .navbar a:hover {
+}
+.navbar a:hover {
     color: #007BFF;
-  }
-
-  .logo {
+}
+.logo {
     font-size: 20px;
     font-weight: bold;
     color: #000;
-  }
+}
+.profile-pic {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+}
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 45px;
+    background-color: #fff;
+    min-width: 180px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    z-index: 1000;
+    padding: 0;
+    margin: 0;
+    border: none;
+}
+.dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    margin: 0;
+    border: none;
+    background: none;
+}
+.dropdown-menu a:hover {
+    background-color: #f2f2f2;
+}
+.dropdown.show .dropdown-menu {
+    display: block;
+}
 </style>
+
+<script>
+function toggleDropdown() {
+    document.querySelector(".dropdown").classList.toggle("show");
+}
+window.onclick = function(event) {
+    if (!event.target.matches('.profile-pic')) {
+        document.querySelectorAll(".dropdown").forEach(dropdown => {
+            dropdown.classList.remove("show");
+        });
+    }
+}
+</script>

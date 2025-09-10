@@ -23,12 +23,17 @@
    {% include 'navbar.html' %}
     <div class="container">
         <h1>Sign Up</h1>
+        {% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+
         <form action="{{ url_for('signup') }}" method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <input type="submit" value="Sign Up">
-        </form>
+    <input type="text" name="username" placeholder="Username" required>
+    <input type="email" name="email" placeholder="Email" required>  
+    <input type="password" name="password" placeholder="Password" required>
+    <input type="submit" value="Sign Up">
+</form>
+
         <div style="margin-top:16px;">
             <span style="color:#fff;">Already have an account?</span>
             <a href="{{ url_for('login') }}" style="color:#007bff;">Login</a>
