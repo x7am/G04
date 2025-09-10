@@ -4,16 +4,14 @@
     <meta charset="UTF-8">
     <title>Admin Dashboard - Rented</title>
     <style>
-        body {font-family: Arial, sans-serif; margin: 0; min-height: 100vh; background: #000; color: #fff;}
-        .container {max-width: 1000px; width: 100%; margin: 100px auto 32px auto; padding: 32px; background: #111; border-radius: 8px;}
-        h1 {text-align: center; color: #007bff;}
-        table {width: 100%; border-collapse: collapse; margin-top: 16px;}
-        table th, table td {border: 1px solid #333; padding: 12px; text-align: left;}
-        table tr:nth-child(even) {background: #222;}
-        .btn {padding: 6px 12px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px;}
-        .btn:hover {background: #0056b3;}
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            margin: 0;
+        }
 
-        /* Navbar styles */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -27,35 +25,51 @@
             width: 100%;
             z-index: 10;
         }
-
-        .navbar a {
+        .nav-left, .nav-right {
+            display: flex;
+            align-items: center;
+        }
+        .nav-right a {
             text-decoration: none;
             color: #ffffff;
             margin-left: 15px;
             font-weight: 500;
         }
-
-        .navbar a:hover {
-            color: #007BFF;
-        }
-
+        .nav-right a:hover { color: #007BFF; }
         .logo {
             font-size: 20px;
             font-weight: bold;
-            color: #000;
+            color: #fff;
+            text-decoration: none;
         }
+
+        .container {
+            background-color: #111; /* black box */
+            padding: 32px;
+            border-radius: 8px;
+            max-width: 1000px;
+            width: 95%;
+            margin: 120px auto 32px auto; /* push below navbar */
+        }
+
+        h1 { text-align: center; color: #007bff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        table th, table td { border: 1px solid #333; padding: 12px; text-align: left; }
+        table tr:nth-child(even) { background: #222; }
+        .btn { padding: 6px 12px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+        .btn:hover { background: #0056b3; }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+  
     <nav class="navbar">
-      <div class="nav-left">
-        <a href="{{ url_for('home') }}" class="logo">Rented</a>
-      </div>
-      <div class="nav-right">
-        <a href="{{ url_for('login') }}">Login</a>
-        <a href="{{ url_for('signup') }}">Sign Up</a>
-      </div>
+        <div class="nav-left">
+            <a href="{{ url_for('home') }}" class="logo">Rented</a>
+        </div>
+        <div class="nav-right">
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('signup') }}">Sign Up</a>
+        </div>
     </nav>
 
     <div class="container">

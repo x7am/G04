@@ -15,7 +15,6 @@
             margin: 0;
         }
 
-        /* Navbar */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -34,7 +33,6 @@
         .nav-right a:hover { color: #007BFF; }
         .logo { font-size: 20px; font-weight: bold; color: #fff; text-decoration: none; }
 
-        /* Container */
         .container {
             background-color: #111; /* black box */
             padding: 32px;
@@ -50,7 +48,7 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+
     <nav class="navbar">
         <div class="nav-left">
             <a href="{{ url_for('home') }}" class="logo">Rented</a>
@@ -61,7 +59,6 @@
         </div>
     </nav>
 
-    <!-- Black container -->
     <div class="container">
         <h2>Edit User</h2>
         <form method="POST">
