@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///C:/Users/saeed/OneDrive/Desktop/Rented/rented.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///rented.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
@@ -15,7 +15,6 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User {self.username}>"
-
 @app.route("/")
 def home():
     return render_template("index.html", title="Rented")
@@ -26,6 +25,7 @@ def signup():
         username = request.form.get("username")
         password = request.form.get("password")
 
+        # check if username already exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             return "Username already exists!"
@@ -51,12 +51,18 @@ def login():
             error = "Incorrect username or password!"
 
     return render_template("login.html", title="Login", error=error)
+
+@app.route("/admin")
+def admin_dashboard():
+    users = User.query.all()  # fetch all users from the database
+    return render_template("admin_dashboard.html", users=users, title="Admin Dashboard")
+
 if __name__ == "__main__":
     import sys
 
     if len(sys.argv) > 1 and sys.argv[1] == "initdb":
         with app.app_context():
             db.create_all()
+            print("Database initialized ✅")
     else:
         app.run(debug=True)
-

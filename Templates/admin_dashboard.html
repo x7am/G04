@@ -36,29 +36,24 @@
                 <p>View and manage registered users.</p>
                 <table>
                     <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                    <tr>
-                        <td>john_doe</td>
-                        <td>john@example.com</td>
-                        <td>User</td>
-                        <td>
-                            <a href="#" class="btn">Edit</a>
-                            <a href="#" class="btn">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>admin_user</td>
-                        <td>admin@example.com</td>
-                        <td>Admin</td>
-                        <td>
-                            <a href="#" class="btn">Edit</a>
-                            <a href="#" class="btn">Delete</a>
-                        </td>
-                    </tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Created At</th>
+        <th>Actions</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.password }}</td>
+        <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+        <td>
+            <a href="/edit/{{ user.id }}" class="btn">Edit</a>
+            <a href="/delete/{{ user.id }}" class="btn">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
                 </table>
             </div>
 
