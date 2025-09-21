@@ -9,7 +9,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///C:/Users/saeed/OneDrive/Deskt
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = "your-secret-key"
 
-# Folders for uploads
 UPLOAD_FOLDER = "static/profile_pics"
 LISTING_FOLDER = "static/listing_images"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -19,17 +18,18 @@ os.makedirs(LISTING_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
 
-# --------- Models ---------
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=True)
     password = db.Column(db.String(150), nullable=False)
-    profile_pic = db.Column(db.String(300), default="default.png")
+    profile_pic = db.Column(db.String(300), default="profile_pics/default.png")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f"<User {self.username}>"
+
 
 class Listing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,13 +42,13 @@ class Listing(db.Model):
 
     user = db.relationship("User", backref="listings")
 
-# --------- Routes ---------
+
 @app.route("/")
 def home():
     listings = Listing.query.order_by(Listing.created_at.desc()).all()
     return render_template("index.html", listings=listings)
 
-# ---- Signup/Login/Profile ----
+
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     error = None
@@ -61,13 +61,14 @@ def signup():
             error = "Username already exists!"
         elif User.query.filter_by(email=email).first():
             error = "Email already exists!"
-        else: 
+        else:
             new_user = User(username=username, email=email, password=password)
             db.session.add(new_user)
             db.session.commit()
             return redirect(url_for("login"))
 
     return render_template("signup.html", error=error)
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -84,10 +85,12 @@ def login():
             error = "Incorrect username or password!"
     return render_template("login.html", error=error)
 
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("home"))
+
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
@@ -110,58 +113,82 @@ def profile():
             user.password = new_password
         if file and file.filename:
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            user.profile_pic = filename
+            save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(save_path)
+            user.profile_pic = f"profile_pics/{filename}"
 
         db.session.commit()
         return redirect(url_for("profile"))
 
     return render_template("profile.html", user=user)
 
-# ---- Listings CRUD ----
-@app.route("/create-listing", methods=["GET", "POST"])
+app.config["LISTING_FOLDER"] = os.path.join(app.root_path, "static/listing_images")
+
+@app.route("/create_listing", methods=["GET", "POST"])
 def create_listing():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        title = request.form.get("title")
-        description = request.form.get("description")
-        price = float(request.form.get("price") or 0)
-        file = request.files.get("image")
-        filename = "default_listing.png"
+        title = request.form["title"]
+        description = request.form["description"]
+        price = request.form["price"]
 
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config["LISTING_FOLDER"], filename))
+        image_file = request.files.get("image")
+        image_filename = None
 
-        new_listing = Listing(title=title, description=description, price=price,
-                              image=filename, user_id=session["user_id"])
+        if image_file and image_file.filename != "":
+            filename = secure_filename(image_file.filename)
+            save_path = os.path.join(app.config["LISTING_FOLDER"], filename)
+            image_file.save(save_path)
+            image_filename = filename  # ✅ only filename stored
+
+        new_listing = Listing(
+            title=title,
+            description=description,
+            price=price,
+            image=image_filename,   # ✅ DB only keeps filename
+            user_id=session["user_id"]
+        )
         db.session.add(new_listing)
         db.session.commit()
+
         return redirect(url_for("home"))
 
     return render_template("create_listing.html")
 
-@app.route("/edit-listing/<int:id>", methods=["GET", "POST"])
+
+
+@app.route("/edit_listing/<int:id>", methods=["GET", "POST"])
 def edit_listing(id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
     listing = Listing.query.get_or_404(id)
-    if "user_id" not in session or listing.user_id != session["user_id"]:
-        return redirect(url_for("home"))
+
+    # Make sure only the owner can edit
+    if listing.user_id != session["user_id"]:
+        return "Unauthorized", 403
 
     if request.method == "POST":
-        listing.title = request.form.get("title")
-        listing.description = request.form.get("description")
-        listing.price = float(request.form.get("price") or listing.price)
-        file = request.files.get("image")
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config["LISTING_FOLDER"], filename))
+        listing.title = request.form["title"]
+        listing.description = request.form["description"]
+        listing.price = request.form["price"]
+
+        image_file = request.files.get("image")
+        if image_file and image_file.filename != "":
+            from werkzeug.utils import secure_filename
+            filename = secure_filename(image_file.filename)
+            save_path = os.path.join(app.config["LISTING_FOLDER"], filename)
+            image_file.save(save_path)
             listing.image = filename
+
         db.session.commit()
         return redirect(url_for("home"))
 
     return render_template("edit_listing.html", listing=listing)
+
+
 
 @app.route("/delete-listing/<int:id>", methods=["POST"])
 def delete_listing(id):
@@ -172,7 +199,7 @@ def delete_listing(id):
     db.session.commit()
     return redirect(url_for("home"))
 
-# ---- Context processor ----
+
 @app.context_processor
 def inject_user():
     if "user_id" in session:
@@ -180,7 +207,7 @@ def inject_user():
         return dict(user=user)
     return dict(user=None)
 
-# -------- Run App --------
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

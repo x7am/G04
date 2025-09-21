@@ -32,14 +32,20 @@
         <div class="listing-grid">
             {% for listing in listings %}
             <div class="listing-card">
-                <img src="{{ url_for('static', filename='listing_images/' ~ listing.image) }}" alt="{{ listing.title }}">
+                <img src="{{ url_for('static', filename='listing_images/' + listing.image) }}" alt="{{ listing.title }}">
                 <h3>{{ listing.title }}</h3>
                 <p>{{ listing.description }}</p>
                 <p class="price">RM {{ listing.price }}</p>
                 {% if session.get('user_id') == listing.user_id %}
                 <div>
+                    
                     <a href="{{ url_for('edit_listing', id=listing.id) }}" class="btn btn-edit">Edit</a>
-                    <a href="{{ url_for('delete_listing', id=listing.id) }}" class="btn btn-delete" onclick="return confirm('Are you sure?');">Delete</a>
+                    <form action="{{ url_for('delete_listing', id=listing.id) }}" method="POST" style="display:inline;">
+    <button type="submit" style="background-color:red; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">
+        Delete
+    </button>
+</form>
+
                 </div>
                 {% endif %}
             </div>
