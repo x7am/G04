@@ -10,10 +10,13 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///rented.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
-ADMIN_EMAIL = "axax14143625@gmail.com"
-ADMIN_PASSWORD = "asxasx123098"
-SMTP_HOST = "smtp.office365.com"
+ADMIN_EMAIL = "miniit799@gmail.com"  # Your Gmail address
+ADMIN_PASSWORD = "cldn gswl pyop reqw"  # App Password generated from Gmail
+SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
+
+
+app.jinja_env.globals['datetime'] = datetime
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -76,7 +79,6 @@ def edit_user(user_id):
 
     if request.method == "POST":
         user.username = request.form.get("username")
-        # Hash the password if it was changed
         password = request.form.get("password")
         if password:
             user.password = generate_password_hash(password)
@@ -110,14 +112,14 @@ def send_email():
     msg["To"] = ADMIN_EMAIL
 
     try:
-
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
             server.login(ADMIN_EMAIL, ADMIN_PASSWORD)
             server.send_message(msg)
 
-            # Send auto-reply to user
-            reply = MIMEText(f"Hello {name},\n\nThanks for contacting us! We received your message and will reply soon.\n\n- Rented Team")
+            reply = MIMEText(
+                f"Hello {name},\n\nThanks for contacting us! We received your message and will reply soon.\n\n- Rented Team"
+            )
             reply["Subject"] = "We received your message"
             reply["From"] = ADMIN_EMAIL
             reply["To"] = user_email
@@ -129,7 +131,6 @@ def send_email():
 
 if __name__ == "__main__":
     import sys
-
     if len(sys.argv) > 1 and sys.argv[1] == "initdb":
         with app.app_context():
             db.create_all()
