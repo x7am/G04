@@ -6,6 +6,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import smtplib
 from email.mime.text import MIMEText
+from flask import redirect, url_for, flash
+
+
 
 app = Flask(__name__)
 
@@ -191,7 +194,9 @@ def edit_listing(id):
         return redirect(url_for("login"))
 
     listing = Listing.query.get_or_404(id)
-    if listing.user_id != session["user_id"]:
+    user = User.query.get(session["user_id"])
+
+    if listing.user_id != session["user_id"] and not user.is_admin:
         return "Unauthorized", 403
 
     if request.method == "POST":
@@ -212,10 +217,17 @@ def edit_listing(id):
     return render_template("edit_listing.html", listing=listing)
 
 
+
 @app.route("/delete-listing/<int:id>", methods=["POST"])
 def delete_listing(id):
     listing = Listing.query.get_or_404(id)
-    if "user_id" not in session or listing.user_id != session["user_id"]:
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user = User.query.get(session["user_id"])
+
+    # Allow owner OR admin
+    if listing.user_id != session["user_id"] and not user.is_admin:
         return redirect(url_for("home"))
 
     db.session.delete(listing)
@@ -223,10 +235,21 @@ def delete_listing(id):
     return redirect(url_for("home"))
 
 
+from flask import redirect, url_for, flash
+
 @app.route("/admin")
 def admin_dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user = User.query.get(session["user_id"])
+    if not user.is_admin:  # check if user is not admin
+        return "Access denied", 403
+
     users = User.query.all()
     return render_template("admin_dashboard.html", users=users, title="Admin Dashboard")
+
+
 
 
 @app.route("/edit/<int:user_id>", methods=["GET", "POST"])
@@ -335,5 +358,18 @@ def inject_user():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+
+        if not User.query.filter_by(is_admin=True).first():
+            admin = User(
+                username="Admin",
+                email="admin@example.com",
+                password=generate_password_hash("123"),
+                is_admin=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("Default admin created: username=Admin, password=admin123")
+
         print(f"Database created at: {db_path}")
+
     app.run(debug=True)
