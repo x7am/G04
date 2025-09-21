@@ -1,12 +1,13 @@
 <nav class="navbar">
     <div class="nav-left">
         <a href="{{ url_for('home') }}" class="logo">Rented</a>
+        <a href="{{ url_for('contact') }}" class="contact-link">Contact Us</a> <!-- Moved next to logo -->
     </div>
     <div class="nav-right">
         {% if session.get('user_id') %}
         <div class="dropdown">
-            <img src="{{ url_for('static', filename='profile_pics/' ~ user.profile_pic) }}" 
-                 alt="Profile" class="profile-pic" onclick="toggleDropdown()">
+            <img src="{{ url_for('static', filename=user.profile_pic) }}" 
+                class="profile-pic" onclick="toggleDropdown()">
             <div id="dropdownMenu" class="dropdown-menu">
                 <a href="{{ url_for('profile') }}">
                     <span>⚙️</span> Edit Profile
@@ -32,20 +33,35 @@
     background-color: #730000;
     border-bottom: 1px solid #ddd;
 }
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between logo and Contact Us */
+}
+
 .navbar a {
     text-decoration: none;
     color: #ffffff;
-    margin-left: 15px;
     font-weight: 500;
 }
+
 .navbar a:hover {
     color: #007BFF;
 }
+
 .logo {
     font-family: 'Arial Black', sans-serif;
     font-size: 25px;
     color: #000000;
 }
+
+.contact-link {
+    color: #ffffff; /* White text to match navbar */
+    font-size: 0.9rem; /* Smaller than logo */
+    font-weight: 400;
+}
+
 .profile-pic {
     width: 35px;
     height: 35px;
@@ -53,10 +69,12 @@
     object-fit: cover;
     cursor: pointer;
 }
+
 .dropdown {
     position: relative;
     display: inline-block;
 }
+
 .dropdown-menu {
     display: none;
     position: absolute;
@@ -71,6 +89,7 @@
     padding: 0;
     margin: 0;
 }
+
 .dropdown-menu a {
     display: flex;
     align-items: center;
@@ -83,9 +102,11 @@
     border: none;
     background: none;
 }
+
 .dropdown-menu a:hover {
     background-color: #f2f2f2;
 }
+
 .dropdown.show .dropdown-menu {
     display: block;
 }
