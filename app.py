@@ -3,22 +3,23 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
-import os
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///rented.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")  # e.g. yourproject@outlook.com
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")  # Outlook password or App Password
+ADMIN_EMAIL = "axax14143625@gmail.com"
+ADMIN_PASSWORD = "asxasx123098"
 SMTP_HOST = "smtp.office365.com"
 SMTP_PORT = 587
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)  # Admin flag
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -34,12 +35,12 @@ def signup():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        # Check if username exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             return "Username already exists!"
 
-        new_user = User(username=username, password=password)
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for("login"))
@@ -53,12 +54,12 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        user = User.query.filter_by(username=username, password=password).first()
-        if user:
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
             if user.is_admin:
-                return redirect(url_for("admin_dashboard"))  # Admin goes to dashboard
+                return redirect(url_for("admin_dashboard"))
             else:
-                return redirect(url_for("home"))  # Regular user goes to home
+                return redirect(url_for("home"))
         else:
             error = "Incorrect username or password!"
 
@@ -75,7 +76,10 @@ def edit_user(user_id):
 
     if request.method == "POST":
         user.username = request.form.get("username")
-        user.password = request.form.get("password")
+        # Hash the password if it was changed
+        password = request.form.get("password")
+        if password:
+            user.password = generate_password_hash(password)
         db.session.commit()
         return redirect(url_for("admin_dashboard"))
 
@@ -106,24 +110,23 @@ def send_email():
     msg["To"] = ADMIN_EMAIL
 
     try:
+
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
             server.login(ADMIN_EMAIL, ADMIN_PASSWORD)
             server.send_message(msg)
 
-        reply = MIMEText(f"Hello {name},\n\nThanks for contacting us! We received your message and will reply soon.\n\n- Rented Team")
-        reply["Subject"] = "We received your message"
-        reply["From"] = ADMIN_EMAIL
-        reply["To"] = user_email
-
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(ADMIN_EMAIL, ADMIN_PASSWORD)
+            # Send auto-reply to user
+            reply = MIMEText(f"Hello {name},\n\nThanks for contacting us! We received your message and will reply soon.\n\n- Rented Team")
+            reply["Subject"] = "We received your message"
+            reply["From"] = ADMIN_EMAIL
+            reply["To"] = user_email
             server.send_message(reply)
 
         return "✅ Message sent and auto-reply delivered."
     except Exception as e:
         return f"❌ Error sending email: {e}"
+
 if __name__ == "__main__":
     import sys
 
