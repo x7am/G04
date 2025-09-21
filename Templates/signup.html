@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - Rented</title>
+    <style>
+        body {font-family: Arial, sans-serif; margin: 0; min-height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; padding-top: 64px;}
+        .container {max-width: 400px; width: 100%; background: #000; padding: 32px; border-radius: 8px; text-align: center;}
+        h1 {color: #fff; margin-bottom: 24px;}
+        form {display: flex; flex-direction: column; gap: 16px;}
+        input[type="text"], input[type="email"], input[type="password"] {padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;}
+        input[type="submit"] {background: #007bff; color: #fff; padding: 10px; border: none; border-radius: 4px; cursor: pointer;}
+        input[type="submit"]:hover {background: #0056b3;}
+        nav {width: 100%; background: #444; padding: 16px 32px; position: absolute; top: 0; left: 0; z-index: 10; display: flex;}
+        nav ul {list-style: none; display: flex; margin: 0; padding: 0;}
+        nav .nav-right {margin-left: auto; display: flex; gap: 8px; padding-right: 32px;}
+        nav ul li a, nav .nav-right a {color: #fff; text-decoration: none; font-size: 16px; border-radius: 4px; padding: 6px 16px; background: #000;}
+        nav ul li a:hover, nav .nav-right a:hover {color: #007bff; background: #111;}
+        .footer {margin-top: 24px; color: #777; font-size: 14px;}
+    </style>
+</head>
+<body>
+   {% include 'navbar.html' %}
+    <div class="container">
+        <h1>Sign Up</h1>
+        <form action="{{ url_for('signup') }}" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <input type="submit" value="Sign Up">
+        </form>
+        <div style="margin-top:16px;">
+            <span style="color:#fff;">Already have an account?</span>
+            <a href="{{ url_for('login') }}" style="color:#007bff;">Login</a>
+        </div>
+        <div class="footer">&copy; 2025 Rented. All rights reserved.</div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="{{ url_for('home') }}" class="logo">Rented</a>
+  </div>
+
+  <div class="nav-right">
+    <a href="{{ url_for('login') }}">Login</a>
+    <a href="{{ url_for('signup') }}">Sign Up</a>
+  </div>
+</nav>
+
+<style>
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background-color: #730000;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .navbar a {
+    text-decoration: none;
+    color: #ffffff;
+    margin-left: 15px;
+    font-weight: 500;
+  }
+
+  .navbar a:hover {
+    color: #007BFF;
+  }
+
+  .logo {
+    font-size: 20px;
+    font-weight: bold;
+    color: #000;
+  }
+</style>
