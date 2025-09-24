@@ -13,13 +13,27 @@
     <div class="listing-grid">
         {% for listing in listings %}
         <div class="listing-card">
-            <div class="username-overlay">
-                Added by: {{ listing.user.username }}
-            </div>
-            <img src="{{ url_for('static', filename='listing_images/' + listing.image) }}" alt="{{ listing.title }}">
-            <h3>{{ listing.title }}</h3>
-            <p>{{ listing.description }}</p>
-            <p class="price">RM {{ listing.price }}</p>
+
+            <!-- Added by (username + profile picture) -->
+           <div class="user-info">
+    {% if listing.user and listing.user.profile_pic %}
+        <img src="{{ url_for('static', filename='profile_pics/' + listing.user.profile_pic) }}"
+             alt="{{ listing.user.username }}'s profile picture" class="profile-pic">
+    {% else %}
+        <img src="{{ url_for('static', filename='profile_pics/default.png') }}"
+             alt="Default profile picture" class="profile-pic">
+    {% endif %}
+    <span class="username">{{ listing.user.username }}</span>
+</div>
+
+
+            <!-- Clickable content -->
+            <a href="{{ url_for('view_listing', id=listing.id) }}" class="listing-card-link">
+                <img src="{{ url_for('static', filename='listing_images/' + listing.image) }}" alt="{{ listing.title }}">
+                <h3>{{ listing.title }}</h3>
+                <p>{{ listing.description }}</p>
+                <p class="price">RM {{ listing.price }}</p>
+            </a>
 
             {% if user and (user.is_admin or user.id == listing.user_id) %}
             <div style="margin-top: 8px;">
@@ -36,7 +50,7 @@
     </div>
 </div>
 
-<!-- Footer moved OUTSIDE the container -->
+<!-- Footer -->
 <footer class="footer">&copy; 2025 Rented. All rights reserved.</footer>
 
 <style>
@@ -48,7 +62,7 @@
     margin-top: 24px;
 }
 
-/* Individual card */
+/* Card */
 .listing-card {
     display: flex;
     flex-direction: column;
@@ -57,30 +71,52 @@
     padding: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     color: #fff;
-    text-align: center;
     position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.listing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
-.listing-card img {
+/* User info (Added by + pic) */
+.user-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.user-info .profile-pic {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+}
+.user-info .username {
+    font-size: 14px;
+    color: #ccc;
+}
+
+/* Clickable content */
+.listing-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+.listing-card-link img {
     width: 100%;
     height: 180px;
     object-fit: cover;
     border-radius: 6px;
     margin-bottom: 8px;
 }
-
-.username-overlay {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+.listing-card-link h3,
+.listing-card-link p,
+.listing-card-link .price {
+    margin: 0.25rem 0;
 }
 
-/* Buttons inside card */
+/* Buttons */
 .btn-edit {
     background: #007bff;
     margin-right: 4px;

@@ -396,9 +396,13 @@ def about():
     return render_template('about.html')
 
 
-# ------------------------
-# RUN APP
-# ------------------------
+@app.route("/listing/<int:id>")
+def view_listing(id):
+    listing = Listing.query.get_or_404(id)
+    return render_template("view_listing.html", listing=listing)
+
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
