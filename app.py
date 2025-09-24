@@ -1,14 +1,11 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import smtplib
 from email.mime.text import MIMEText
-from flask import redirect, url_for, flash
-
-
 
 app = Flask(__name__)
 
@@ -32,14 +29,13 @@ os.makedirs(LISTING_FOLDER, exist_ok=True)
 
 # Email setup
 ADMIN_EMAIL = "miniit799@gmail.com"
-ADMIN_PASSWORD = "cldn gswl pyop reqw"  # ⚠️ app password (not normal Gmail password)
+ADMIN_PASSWORD = "cldn gswl pyop reqw"  # ⚠️ app password
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
 
 # Database instance
 db = SQLAlchemy(app)
 app.jinja_env.globals['datetime'] = datetime
-
 
 # ------------------------
 # MODELS
@@ -53,7 +49,6 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
 class Listing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
@@ -65,7 +60,6 @@ class Listing(db.Model):
 
     user = db.relationship("User", backref="listings")
 
-
 # ------------------------
 # ROUTES
 # ------------------------
@@ -73,7 +67,6 @@ class Listing(db.Model):
 def home():
     listings = Listing.query.order_by(Listing.created_at.desc()).all()
     return render_template("index.html", listings=listings)
-
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -92,10 +85,10 @@ def signup():
             new_user = User(username=username, email=email, password=hashed_password)
             db.session.add(new_user)
             db.session.commit()
+            flash("Account created successfully!", "success")
             return redirect(url_for("login"))
 
     return render_template("signup.html", error=error)
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -108,54 +101,103 @@ def login():
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
             session["username"] = user.username
+            flash(f"Welcome back, {user.username}!", "success")
             if user.is_admin:
                 return redirect(url_for("admin_dashboard"))
             else:
                 return redirect(url_for("home"))
         else:
             error = "Incorrect username or password!"
+            flash(error, "error")
 
     return render_template("login.html", error=error)
-
 
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("Logged out successfully.", "success")
     return redirect(url_for("home"))
 
-
-@app.route("/profile", methods=["GET", "POST"])
+# ------------------------
+# PROFILE ROUTES (MERGED)
+# ------------------------
+@app.route("/profile", methods=["GET"])
 def profile():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    user = User.query.get(session["user_id"])
+    return render_template("profile.html", user=user)
+
+@app.route("/update-profile", methods=["POST"])
+def update_profile():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
     user = User.query.get(session["user_id"])
+    username = request.form.get("username")
+    email = request.form.get("email")
+    profile_pic = request.files.get("profile_pic")
 
-    if request.method == "POST":
-        new_username = request.form.get("username")
-        new_email = request.form.get("email")
-        new_password = request.form.get("password")
-        file = request.files.get("profile_pic")
+    if username:
+        user.username = username
+        session["username"] = username
 
-        if new_username:
-            user.username = new_username
-            session["username"] = new_username
-        if new_email:
-            user.email = new_email
-        if new_password:
-            user.password = generate_password_hash(new_password)
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            file.save(save_path)
-            user.profile_pic = f"profile_pics/{filename}"
+    # Only update email if it's not used by another user
+    if email:
+        existing_email_user = User.query.filter(User.email == email, User.id != user.id).first()
+        if existing_email_user:
+            flash("Email is already taken by another user.", "error")
+            return redirect(url_for("profile"))
+        user.email = email
 
-        db.session.commit()
+    if profile_pic and profile_pic.filename:
+        filename = secure_filename(profile_pic.filename)
+        save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        profile_pic.save(save_path)
+        user.profile_pic = f"profile_pics/{filename}"
+
+    db.session.commit()
+    flash("Profile updated successfully!", "success")
+    return redirect(url_for("profile"))
+
+@app.route("/update-password", methods=["POST"])
+def update_password():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user = User.query.get(session["user_id"])
+    current_password = request.form.get("current_password")
+    new_password = request.form.get("new_password")
+    confirm_password = request.form.get("confirm_password")
+
+    if not check_password_hash(user.password, current_password):
+        flash("Current password is incorrect.", "error")
         return redirect(url_for("profile"))
 
-    return render_template("profile.html", user=user)
+    if new_password != confirm_password:
+        flash("New password and confirmation do not match.", "error")
+        return redirect(url_for("profile"))
 
+    user.password = generate_password_hash(new_password)
+    db.session.commit()
+    flash("Password updated successfully!", "success")
+    return redirect(url_for("profile"))
 
+@app.route("/delete-account", methods=["POST"])
+def delete_account():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user = User.query.get(session["user_id"])
+    db.session.delete(user)
+    db.session.commit()
+    session.clear()
+    flash("Your account has been deleted.", "success")
+    return redirect(url_for("home"))
+
+# ------------------------
+# LISTING ROUTES
+# ------------------------
 @app.route("/create_listing", methods=["GET", "POST"])
 def create_listing():
     if "user_id" not in session:
@@ -183,10 +225,10 @@ def create_listing():
         )
         db.session.add(new_listing)
         db.session.commit()
+        flash("Listing created successfully!", "success")
         return redirect(url_for("home"))
 
     return render_template("create_listing.html")
-
 
 @app.route("/edit_listing/<int:id>", methods=["GET", "POST"])
 def edit_listing(id):
@@ -212,11 +254,10 @@ def edit_listing(id):
             listing.image = filename
 
         db.session.commit()
+        flash("Listing updated successfully!", "success")
         return redirect(url_for("home"))
 
     return render_template("edit_listing.html", listing=listing)
-
-
 
 @app.route("/delete-listing/<int:id>", methods=["POST"])
 def delete_listing(id):
@@ -225,32 +266,28 @@ def delete_listing(id):
         return redirect(url_for("login"))
 
     user = User.query.get(session["user_id"])
-
-    # Allow owner OR admin
     if listing.user_id != session["user_id"] and not user.is_admin:
         return redirect(url_for("home"))
 
     db.session.delete(listing)
     db.session.commit()
+    flash("Listing deleted successfully!", "success")
     return redirect(url_for("home"))
 
-
-from flask import redirect, url_for, flash
-
+# ------------------------
+# ADMIN ROUTES
+# ------------------------
 @app.route("/admin")
 def admin_dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
     user = User.query.get(session["user_id"])
-    if not user.is_admin:  # check if user is not admin
+    if not user.is_admin:
         return "Access denied", 403
 
     users = User.query.all()
     return render_template("admin_dashboard.html", users=users, title="Admin Dashboard")
-
-
-
 
 @app.route("/edit/<int:user_id>", methods=["GET", "POST"])
 def edit_user(user_id):
@@ -261,22 +298,18 @@ def edit_user(user_id):
         if password:
             user.password = generate_password_hash(password)
         db.session.commit()
+        flash("User updated successfully!", "success")
         return redirect(url_for("admin_dashboard"))
-
     return render_template("edit_user.html", user=user, title="Edit User")
-
 
 @app.route("/delete/<int:user_id>")
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
+    flash("User deleted successfully!", "success")
     return redirect(url_for("admin_dashboard"))
 
-
-# ------------------------
-# CREATE USER (ADMIN ONLY)
-# ------------------------
 @app.route("/create_user", methods=["GET", "POST"])
 def create_user():
     if "user_id" not in session:
@@ -291,25 +324,28 @@ def create_user():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        # Email must be unique
         if User.query.filter_by(username=username).first():
-            return "Username already exists!"
+            flash("Username already exists!", "error")
+            return redirect(url_for("create_user"))
         if email and User.query.filter_by(email=email).first():
-            return "Email already exists!"
+            flash("Email already exists!", "error")
+            return redirect(url_for("create_user"))
 
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, email=email, password=hashed_password, is_admin=False)
         db.session.add(new_user)
         db.session.commit()
+        flash("User created successfully!", "success")
         return redirect(url_for("admin_dashboard"))
 
     return render_template("create_user.html", title="Create User")
 
-
+# ------------------------
+# CONTACT ROUTES
+# ------------------------
 @app.route("/contact")
 def contact():
     return render_template("contact.html", title="Contact Us")
-
 
 @app.route("/send", methods=["POST"])
 def send_email():
@@ -339,10 +375,11 @@ def send_email():
             reply["To"] = user_email
             server.send_message(reply)
 
-        return "✅ Message sent and auto-reply delivered."
+        flash("Message sent successfully!", "success")
+        return redirect(url_for("contact"))
     except Exception as e:
-        return f"❌ Error sending email: {e}"
-
+        flash(f"Error sending email: {e}", "error")
+        return redirect(url_for("contact"))
 
 # ------------------------
 # CONTEXT PROCESSOR
@@ -354,7 +391,9 @@ def inject_user():
         return dict(user=user)
     return dict(user=None)
 
-
+# ------------------------
+# RUN APP
+# ------------------------
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
