@@ -391,6 +391,11 @@ def inject_user():
         return dict(user=user)
     return dict(user=None)
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+
 # ------------------------
 # RUN APP
 # ------------------------

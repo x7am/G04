@@ -34,9 +34,10 @@
         <p style="color:#fff; text-align:center; grid-column: 1 / -1;">No listings available.</p>
         {% endfor %}
     </div>
-
-    <div class="footer">&copy; 2025 Rented. All rights reserved.</div>
 </div>
+
+<!-- Footer moved OUTSIDE the container -->
+<footer class="footer">&copy; 2025 Rented. All rights reserved.</footer>
 
 <style>
 /* Listing grid */
@@ -57,6 +58,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     color: #fff;
     text-align: center;
+    position: relative;
 }
 
 .listing-card img {
@@ -95,6 +97,16 @@
     margin-bottom: 20px;
     display: inline-block;
     padding: 8px 16px;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 16px;
+    margin-top: 40px;
+    color: #aaa;
+    font-size: 0.9rem;
+    border-top: 1px solid #222;
 }
 </style>
 {% endblock %}
