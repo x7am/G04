@@ -1,15 +1,141 @@
 {% extends "base.html" %}
 
-{% block title %}{{ listing.title }} - Rented{% endblock %}
+{% block title %}View Listing - Rented{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 600px; margin: 40px auto; text-align: center;">
-    <h1>{{ listing.title }}</h1>
-    <img src="{{ url_for('static', filename='listing_images/' + listing.image) }}" 
-         alt="{{ listing.title }}" 
-         style="max-width:100%; border-radius:8px; margin-bottom:16px;">
-    <p style="font-size: 1.2rem;">{{ listing.description }}</p>
-    <p class="price" style="font-size:1.5rem; font-weight:bold;">RM {{ listing.price }}</p>
-    <p style="margin-top: 12px; color:#aaa;">Added by: {{ listing.user.username }}</p>
-</div>
+<div class="container">
+  <!-- Listing Info -->
+  <div style="background: #111; padding: 24px; border-radius: 12px; margin-bottom: 24px;">
+    <h2 style="color: #fff; margin-bottom: 16px;">{{ listing.title }}</h2>
+    <img src="{{ url_for('static', filename='listing_images/' ~ (listing.image or 'default_listing.png')) }}"
+         alt="Listing image"
+         style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 16px; border: 1px solid #333;">
+
+    <p style="color: #ccc;"><strong>Description:</strong> {{ listing.description }}</p>
+    <p style="color: #ccc;"><strong>Price per day:</strong> RM {{ listing.price }}</p>
+    <p style="color: #ccc;"><strong>Posted by:</strong> {{ listing.user.username }}</p>
+  </div>
+
+  {% set approved_request = requests | selectattr("status", "equalto", "Approved") | list %}
+
+  <!-- Rent Request Form -->
+  {% if user and user.id != listing.user_id %}
+    {% if not approved_request %}
+      {% set existing_user_request = requests | selectattr("renter_id", "equalto", user.id) | list %}
+      {% if not existing_user_request %}
+        <div style="background: #111; padding: 24px; border-radius: 12px; margin-bottom: 24px;">
+          <h3 style="color: #fff; margin-bottom: 12px;">Send Rental Request</h3>
+          <form method="POST">
+            <label for="days" style="color: #ccc;">Number of Days</label>
+            <input type="number" id="days" name="days" min="1" required
+                   style="width: 100%; padding: 10px; margin-bottom: 16px; background: #171414; color: #fff; border-radius: 8px; border: 1px solid #333;">
+
+            <label for="description" style="color: #ccc;">Additional Notes</label>
+            <textarea id="description" name="description" rows="5"
+                      style="width: 100%; padding: 10px; background: #171414; color: #fff; border-radius: 8px; border: 1px solid #333; margin-bottom: 16px;"></textarea>
+
+            <button type="submit" class="auth-link" 
+                    style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; font-weight: bold; border: none; cursor: pointer;">
+              Send Request
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+
+  <!-- Approved Request Info -->
+  {% if approved_request %}
+    {% set req = approved_request[0] %}
+    <div style="background: rgba(0,0,0,0.6); padding: 24px; border-radius: 12px; margin-bottom: 24px;">
+      <h3 style="color: #fff; margin-bottom: 12px;">Already Rented</h3>
+      <p style="color: #ccc;">
+        <strong>Renter:</strong> {{ req.renter.username if req.renter else 'N/A' }}
+      </p>
+      <p style="color: #ccc;"><strong>Days:</strong> {{ req.days }}</p>
+      <p style="color: #ccc;"><strong>Price per day:</strong> RM {{ listing.price }}</p>
+      <p style="color: #ccc;"><strong>Total:</strong> RM {{ listing.price * req.days }}</p>
+      <p style="color: #ccc;"><strong>Notes:</strong> {{ req.description or 'N/A' }}</p>
+      {% if user and (user.id == req.renter_id or user.id == listing.user_id) %}
+        <a href="{{ url_for('request_pdf', request_id=req.id) }}" 
+           style="padding: 8px 12px; background: #17a2b8; color: #fff; font-weight: bold; border-radius: 6px; text-decoration: none; display: inline-block; margin-top: 10px;">
+          📄 Download PDF
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Rental Requests (only if no approved request) -->
+  {% if not approved_request %}
+    <div style="background: #111; padding: 24px; border-radius: 12px;">
+      <h3 style="color: #fff; margin-bottom: 12px;">Rental Requests</h3>
+      {% if requests %}
+        <ul style="list-style: none; padding-left: 0;">
+          {% for req in requests %}
+            <li style="margin-bottom: 20px; padding: 16px; background: #222; border-radius: 10px;">
+              <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+
+                <!-- Request Info -->
+                <div>
+                  <strong style="color: #fff;">{{ req.renter.username if req.renter else 'N/A' }}</strong> requested for 
+                  <strong style="color: #fff;">{{ req.days }}</strong> days<br>
+                  <small>Status:
+                    <span style="font-weight: bold;
+                      color: {% if req.status == 'Approved' %}#28a745
+                             {% elif req.status == 'Rejected' %}#dc3545
+                             {% else %}#999
+                      {% endif %}">{{ req.status }}</span>
+                  </small>
+                  {% if req.description %}
+                    <p style="color: #ccc; margin-top: 8px;"><em>Note:</em> {{ req.description }}</p>
+                  {% endif %}
+                </div>
+
+                <!-- Actions & Time Ago -->
+                <div style="display:flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                  <span style="color: #999; font-size: 12px;">{{ req.created_at|timeago }}</span>
+
+                  {% if user and user.id == req.renter_id and req.status != 'Approved' %}
+                    <a href="{{ url_for('edit_request', request_id=req.id) }}" 
+                       style="padding: 8px 12px; background: #ffc107; color: #000; font-weight: bold; border-radius: 6px; text-align: center; text-decoration: none; display: inline-block; min-width: 120px;">
+                      ✏️ Edit
+                    </a>
+
+                    <form action="{{ url_for('delete_request', request_id=req.id) }}" method="POST" style="display:inline;">
+                      <button type="submit" 
+                              style="padding: 8px 12px; background: #dc3545; color: #fff; font-weight: bold; border-radius: 6px; text-align: center; border: none; cursor: pointer; min-width: 120px;">
+                        🗑️ Delete
+                      </button>
+                    </form>
+                  {% endif %}
+
+                  {% if user and user.id == listing.user_id and req.status == 'Pending' %}
+                    <a href="{{ url_for('approve_request', request_id=req.id) }}" 
+                       style="padding: 8px 12px; background: #28a745; color: #fff; font-weight: bold; border-radius: 6px; text-align: center; text-decoration: none; display: inline-block; min-width: 180px;">
+                      ✅ Approve
+                    </a>
+                    <a href="{{ url_for('decline_request', request_id=req.id) }}" 
+                       style="padding: 8px 12px; background: #dc3545; color: #fff; font-weight: bold; border-radius: 6px; text-align: center; text-decoration: none; display: inline-block; min-width: 180px;">
+                      ❌ Decline
+                    </a>
+                  {% endif %}
+
+                  {% if req.status == 'Approved' and user and (user.id == req.renter_id or user.id == listing.user_id) %}
+                    <a href="{{ url_for('request_pdf', request_id=req.id) }}" 
+                       style="padding: 8px 12px; background: #17a2b8; color: #fff; font-weight: bold; border-radius: 6px; text-decoration: none; display: inline-block;">
+                      📄 Download PDF
+                    </a>
+                  {% endif %}
+
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p style="color: #ccc;">No requests yet.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>  
 {% endblock %}
