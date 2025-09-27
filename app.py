@@ -9,6 +9,11 @@ from email.mime.text import MIMEText
 # reportlab (used for PDF generation)
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet
+
 
 app = Flask(__name__)
 
@@ -408,17 +413,52 @@ def request_pdf(request_id):
     pdf_filename = f"rental_request_{rent_request.id}.pdf"
     pdf_path = os.path.join("instance", pdf_filename)
 
-    # Generate PDF
-    c = canvas.Canvas(pdf_path, pagesize=letter)
-    c.drawString(100, 750, f"Rental Confirmation for {listing.title}")
-    c.drawString(100, 720, f"Renter: {rent_request.renter.username}")
-    c.drawString(100, 700, f"Owner: {listing.user.username}")
-    c.drawString(100, 680, f"Days: {rent_request.days}")
-    c.drawString(100, 660, f"Notes: {rent_request.description or 'N/A'}")
-    c.drawString(100, 640, f"Price per day: RM {listing.price}")
-    total = listing.price * rent_request.days
-    c.drawString(100, 620, f"Total: RM {total}")
-    c.save()
+    # --- PDF Generation ---
+    doc = SimpleDocTemplate(pdf_path, pagesize=letter)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # Title
+    elements.append(Paragraph("<b>Rental Confirmation</b>", styles["Title"]))
+    elements.append(Spacer(1, 20))
+
+    # Logo (optional)
+    logo_path = os.path.join("static", "images", "logo.png")
+    if os.path.exists(logo_path):
+        elements.append(Image(logo_path, width=120, height=60))
+        elements.append(Spacer(1, 20))
+
+    # Rental details
+    data = [
+        ["Listing", listing.title],
+        ["Renter", rent_request.renter.username],
+        ["Owner", listing.user.username],
+        ["Days", str(rent_request.days)],
+        ["Notes", rent_request.description or "N/A"],
+        ["Price per day", f"RM {listing.price:.2f}"],
+        ["Total", f"RM {listing.price * rent_request.days:.2f}"],
+    ]
+
+    table = Table(data, colWidths=[150, 350])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4CAF50")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+    ]))
+
+    elements.append(table)
+    elements.append(Spacer(1, 30))
+
+    # Footer
+    elements.append(Paragraph(
+        "Thank you for using Rented! Please keep this document as proof of your rental agreement.",
+        styles["Normal"]
+    ))
+
+    doc.build(elements)
 
     return send_file(pdf_path, as_attachment=True)
 
