@@ -1,15 +1,19 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import smtplib
 from email.mime.text import MIMEText
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 
-# Database setup
+# ------------------------
+# CONFIGURATION
+# ------------------------
 basedir = os.path.abspath(os.path.dirname(__file__))
 instance_folder = os.path.join(basedir, "instance")
 os.makedirs(instance_folder, exist_ok=True)
@@ -27,13 +31,15 @@ app.config["LISTING_FOLDER"] = LISTING_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(LISTING_FOLDER, exist_ok=True)
 
-# Email setup
+# Email config
 ADMIN_EMAIL = "miniit799@gmail.com"
-ADMIN_PASSWORD = "cldn gswl pyop reqw"  # ⚠️ app password
+ADMIN_PASSWORD = "cldn gswl pyop reqw"  # Gmail app password
+
+# Gmail SMTP settings
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
 
-# Database instance
+# Database
 db = SQLAlchemy(app)
 app.jinja_env.globals['datetime'] = datetime
 
@@ -60,6 +66,18 @@ class Listing(db.Model):
 
     user = db.relationship("User", backref="listings")
 
+class RentRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    days = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(50), default="Pending")  # Pending, Approved, Rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listing.id'))
+    renter_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    listing = db.relationship("Listing", backref="requests")
+    renter = db.relationship("User")
+
 # ------------------------
 # ROUTES
 # ------------------------
@@ -68,6 +86,7 @@ def home():
     listings = Listing.query.order_by(Listing.created_at.desc()).all()
     return render_template("index.html", listings=listings)
 
+# --- Auth Routes ---
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     error = None
@@ -118,10 +137,8 @@ def logout():
     flash("Logged out successfully.", "success")
     return redirect(url_for("home"))
 
-# ------------------------
-# PROFILE ROUTES (MERGED)
-# ------------------------
-@app.route("/profile", methods=["GET"])
+# --- Profile Routes ---
+@app.route("/profile")
 def profile():
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -142,7 +159,6 @@ def update_profile():
         user.username = username
         session["username"] = username
 
-    # Only update email if it's not used by another user
     if email:
         existing_email_user = User.query.filter(User.email == email, User.id != user.id).first()
         if existing_email_user:
@@ -195,9 +211,7 @@ def delete_account():
     flash("Your account has been deleted.", "success")
     return redirect(url_for("home"))
 
-# ------------------------
-# LISTING ROUTES
-# ------------------------
+# --- Listing Routes ---
 @app.route("/create_listing", methods=["GET", "POST"])
 def create_listing():
     if "user_id" not in session:
@@ -274,9 +288,125 @@ def delete_listing(id):
     flash("Listing deleted successfully!", "success")
     return redirect(url_for("home"))
 
-# ------------------------
-# ADMIN ROUTES
-# ------------------------
+# --- Rent Request ---
+@app.route("/listing/<int:id>", methods=["GET", "POST"])
+def view_listing(id):
+    listing = Listing.query.get_or_404(id)
+
+    if request.method == "POST":
+        if "user_id" not in session:
+            flash("You must be logged in to send a request.", "error")
+            return redirect(url_for("login"))
+
+        days = request.form.get("days")
+        description = request.form.get("description")
+
+        new_request = RentRequest(
+            days=days,
+            description=description,
+            listing_id=listing.id,
+            renter_id=session["user_id"]
+        )
+        db.session.add(new_request)
+        db.session.commit()
+        flash("Your rental request has been sent!", "success")
+        return redirect(url_for("view_listing", id=listing.id))
+
+    requests = RentRequest.query.filter_by(listing_id=listing.id).all()
+    return render_template("view_listing.html", listing=listing, requests=requests)
+
+@app.route("/approve_request/<int:request_id>")
+def approve_request(request_id):
+    rent_request = RentRequest.query.get_or_404(request_id)
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    listing = rent_request.listing
+    if session["user_id"] != listing.user_id:
+        return "Unauthorized", 403
+
+    rent_request.status = "Approved"
+    db.session.commit()
+
+    # Generate PDF confirmation
+    pdf_filename = f"rental_request_{rent_request.id}.pdf"
+    pdf_path = os.path.join("instance", pdf_filename)
+
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    c.drawString(100, 750, f"Rental Confirmation for {listing.title}")
+    c.drawString(100, 720, f"Renter: {rent_request.renter.username}")
+    c.drawString(100, 700, f"Owner: {listing.user.username}")
+    c.drawString(100, 680, f"Days: {rent_request.days}")
+    c.drawString(100, 660, f"Notes: {rent_request.description or 'N/A'}")
+    c.drawString(100, 640, f"Price per day: RM {listing.price}")
+    c.drawString(100, 620, f"Total: RM {listing.price * int(rent_request.days)}")
+    c.save()
+
+    flash("Request approved. PDF generated!", "success")
+    return send_file(pdf_path, as_attachment=True)
+
+@app.route("/decline_request/<int:request_id>")
+def decline_request(request_id):
+    rent_request = RentRequest.query.get_or_404(request_id)
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    listing = rent_request.listing
+    if session["user_id"] != listing.user_id:
+        return "Unauthorized", 403
+
+    rent_request.status = "Rejected"
+    db.session.commit()
+    flash("Request declined.", "info")
+    return redirect(url_for("view_listing", id=listing.id))
+
+# --- Email Route ---
+@app.route("/send_email", methods=["POST"])
+def send_email():
+    name = request.form.get("name")
+    email = request.form.get("email")
+    subject = request.form.get("subject")
+    message_body = request.form.get("message")
+
+    if not name or not email or not subject or not message_body:
+        return render_template("contact.html", message="Please fill in all fields.", success=False)
+
+    try:
+        # --- Message to Admin ---
+        admin_msg = MIMEText(f"From: {name} <{email}>\n\n{message_body}")
+        admin_msg["Subject"] = f"Contact Form: {subject}"
+        admin_msg["From"] = ADMIN_EMAIL
+        admin_msg["To"] = ADMIN_EMAIL
+
+        # --- Automated Reply to Sender ---
+        auto_reply = MIMEText(
+            f"Hello {name},\n\n"
+            "Thank you for contacting us! We have received your message and will get back to you shortly.\n\n"
+            "Best regards,\nRented Team"
+        )
+        auto_reply["Subject"] = "Thank you for contacting Rented!"
+        auto_reply["From"] = ADMIN_EMAIL
+        auto_reply["To"] = email
+
+        # --- Send both emails ---
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.starttls()
+        server.login(ADMIN_EMAIL, ADMIN_PASSWORD)
+        server.sendmail(ADMIN_EMAIL, ADMIN_EMAIL, admin_msg.as_string())  # Send to admin
+        server.sendmail(ADMIN_EMAIL, email, auto_reply.as_string())       # Send automated reply
+        server.quit()
+
+        return render_template("contact.html", message="Your message has been sent successfully!", success=True)
+
+    except Exception as e:
+        print("Email error:", e)
+        return render_template("contact.html", message="Failed to send email. Please try again later.", success=False)
+
+
+
+# --- Admin + Contact + Misc ---
 @app.route("/admin")
 def admin_dashboard():
     if "user_id" not in session:
@@ -289,101 +419,14 @@ def admin_dashboard():
     users = User.query.all()
     return render_template("admin_dashboard.html", users=users, title="Admin Dashboard")
 
-@app.route("/edit/<int:user_id>", methods=["GET", "POST"])
-def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
-    if request.method == "POST":
-        user.username = request.form.get("username")
-        password = request.form.get("password")
-        if password:
-            user.password = generate_password_hash(password)
-        db.session.commit()
-        flash("User updated successfully!", "success")
-        return redirect(url_for("admin_dashboard"))
-    return render_template("edit_user.html", user=user, title="Edit User")
-
-@app.route("/delete/<int:user_id>")
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    flash("User deleted successfully!", "success")
-    return redirect(url_for("admin_dashboard"))
-
-@app.route("/create_user", methods=["GET", "POST"])
-def create_user():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    admin = User.query.get(session["user_id"])
-    if not admin.is_admin:
-        return "Unauthorized", 403
-
-    if request.method == "POST":
-        username = request.form.get("username")
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        if User.query.filter_by(username=username).first():
-            flash("Username already exists!", "error")
-            return redirect(url_for("create_user"))
-        if email and User.query.filter_by(email=email).first():
-            flash("Email already exists!", "error")
-            return redirect(url_for("create_user"))
-
-        hashed_password = generate_password_hash(password)
-        new_user = User(username=username, email=email, password=hashed_password, is_admin=False)
-        db.session.add(new_user)
-        db.session.commit()
-        flash("User created successfully!", "success")
-        return redirect(url_for("admin_dashboard"))
-
-    return render_template("create_user.html", title="Create User")
-
-# ------------------------
-# CONTACT ROUTES
-# ------------------------
 @app.route("/contact")
 def contact():
     return render_template("contact.html", title="Contact Us")
 
-@app.route("/send", methods=["POST"])
-def send_email():
-    name = request.form["name"]
-    user_email = request.form["email"]
-    subject = request.form["subject"]
-    message = request.form["message"]
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
-    body = f"Name: {name}\nEmail: {user_email}\n\nMessage:\n{message}"
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = ADMIN_EMAIL
-    msg["To"] = ADMIN_EMAIL
-
-    try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(ADMIN_EMAIL, ADMIN_PASSWORD)
-            server.send_message(msg)
-
-            reply = MIMEText(
-                f"Hello {name},\n\nThanks for contacting us! "
-                "We received your message and will reply soon.\n\n- Rented Team"
-            )
-            reply["Subject"] = "We received your message"
-            reply["From"] = ADMIN_EMAIL
-            reply["To"] = user_email
-            server.send_message(reply)
-
-        flash("Message sent successfully!", "success")
-        return redirect(url_for("contact"))
-    except Exception as e:
-        flash(f"Error sending email: {e}", "error")
-        return redirect(url_for("contact"))
-
-# ------------------------
-# CONTEXT PROCESSOR
-# ------------------------
 @app.context_processor
 def inject_user():
     if "user_id" in session:
@@ -391,21 +434,12 @@ def inject_user():
         return dict(user=user)
     return dict(user=None)
 
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-
-@app.route("/listing/<int:id>")
-def view_listing(id):
-    listing = Listing.query.get_or_404(id)
-    return render_template("view_listing.html", listing=listing)
-
-
-
+# ------------------------
+# RUN
+# ------------------------
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()
+        db.all()
 
         if not User.query.filter_by(is_admin=True).first():
             admin = User(
@@ -416,8 +450,6 @@ if __name__ == "__main__":
             )
             db.session.add(admin)
             db.session.commit()
-            print("Default admin created: username=Admin, password=admin123")
-
-        print(f"Database created at: {db_path}")
+            print("Default admin created: username=Admin, password=123")
 
     app.run(debug=True)

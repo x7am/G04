@@ -15,17 +15,16 @@
         <div class="listing-card">
 
             <!-- Added by (username + profile picture) -->
-           <div class="user-info">
-    {% if listing.user and listing.user.profile_pic %}
-        <img src="{{ url_for('static', filename='profile_pics/' + listing.user.profile_pic) }}"
-             alt="{{ listing.user.username }}'s profile picture" class="profile-pic">
-    {% else %}
-        <img src="{{ url_for('static', filename='profile_pics/default.png') }}"
-             alt="Default profile picture" class="profile-pic">
-    {% endif %}
-    <span class="username">{{ listing.user.username }}</span>
-</div>
-
+            <div class="user-info">
+                {% if listing.user and listing.user.profile_pic %}
+                    <img src="{{ url_for('static', filename=listing.user.profile_pic) }}"
+                         alt="{{ listing.user.username }}'s profile picture" class="profile-pic">
+                {% else %}
+                    <img src="{{ url_for('static', filename='profile_pics/default.png') }}"
+                         alt="Default profile picture" class="profile-pic">
+                {% endif %}
+                <span class="username">{{ listing.user.username }}</span>
+            </div>
 
             <!-- Clickable content -->
             <a href="{{ url_for('view_listing', id=listing.id) }}" class="listing-card-link">
@@ -77,24 +76,6 @@
 .listing-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-
-/* User info (Added by + pic) */
-.user-info {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.user-info .profile-pic {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: 8px;
-}
-.user-info .username {
-    font-size: 14px;
-    color: #ccc;
 }
 
 /* Clickable content */
