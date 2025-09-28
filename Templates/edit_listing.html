@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Listing - Rented{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 100px auto; padding: 32px; background-color: #111; border-radius: 8px; box-shadow: 0 4px 12px rgba(255,255,255,0.1);">
+    <h1 style="text-align:center; margin-bottom:24px; color:#fff;">Edit Listing</h1>
+
+    <div class="current-image" style="margin-bottom:16px; text-align:center;">
+        <img src="{{ url_for('static', filename='listing_images/' + listing.image) }}" alt="Listing Image" style="max-width:100%; border-radius:4px;">
+    </div>
+
+    <form action="{{ url_for('edit_listing', id=listing.id) }}" method="POST" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:16px;">
+        <label style="color:#ccc; font-weight:bold;" for="title">Title</label>
+        <input type="text" id="title" name="title" value="{{ listing.title }}" required style="padding:10px; border-radius:4px; border:1px solid #333; background:#222; color:#fff;">
+
+        <label style="color:#ccc; font-weight:bold;" for="description">Description</label>
+        <textarea id="description" name="description" rows="5" required style="padding:10px; border-radius:4px; border:1px solid #333; background:#222; color:#fff; resize:none;">{{ listing.description }}</textarea>
+
+        <label style="color:#ccc; font-weight:bold;" for="price">Price (RM)</label>
+        <input type="number" id="price" name="price" value="{{ listing.price }}" step="0.01" required style="padding:10px; border-radius:4px; border:1px solid #333; background:#222; color:#fff;">
+
+        <label style="color:#ccc; font-weight:bold;" for="image">Change Image (optional)</label>
+        <input type="file" id="image" name="image" accept="image/*" style="padding:6px; border-radius:4px; border:1px solid #333; background:#222; color:#fff;">
+
+        <button type="submit" class="btn" style="background:#730000; color:#fff; padding:10px; border-radius:4px; border:none; cursor:pointer;">Save Changes</button>
+    </form>
+
+    <div class="footer" style="margin-top:32px; text-align:center; color:#777; font-size:14px;">&copy; 2025 Rented. All rights reserved.</div>
+</div>
+{% endblock %}

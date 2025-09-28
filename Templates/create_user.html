@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create User - Rented</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #FFFFFF;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #111;
+            padding: 32px;
+            border-radius: 8px;
+            width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #730000;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        input {
+            padding: 10px;
+            margin-top: 6px;
+            border: none;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+        }
+
+        input:focus {
+            outline: 2px solid #730000;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            background: #730000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #a30000;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: #aaa;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create User</h1>
+        <form method="POST">
+            <label>Username:</label>
+            <input type="text" name="username" required>
+
+            <label>Email:</label>
+            <input type="email" name="email" required>
+
+            <label>Password:</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">Create User</button>
+        </form>
+        <a href="{{ url_for('admin_dashboard') }}" class="back-link">⬅ Back to Dashboard</a>
+    </div>
+</body>
+</html>

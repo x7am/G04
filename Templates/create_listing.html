@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Create Listing - Rented{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 100px auto 0 auto; padding: 32px;">
+    <h1>Create New Listing</h1>
+    <form action="{{ url_for('create_listing') }}" method="POST" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:16px;">
+        <label for="title" style="font-weight:bold; margin-bottom:4px;">Title</label>
+        <input type="text" id="title" name="title" placeholder="Enter listing title" required
+               style="padding:10px; border-radius:4px; border:1px solid #333; background:#111; color:#fff;">
+
+        <label for="description" style="font-weight:bold; margin-bottom:4px;">Description</label>
+        <textarea id="description" name="description" rows="5" placeholder="Describe your listing..." required
+                  style="padding:10px; border-radius:4px; border:1px solid #333; background:#111; color:#fff; resize:none;"></textarea>
+
+        <label for="price" style="font-weight:bold; margin-bottom:4px;">Price (RM)</label>
+        <input type="number" id="price" name="price" placeholder="Enter price" step="0.01" required
+               style="padding:10px; border-radius:4px; border:1px solid #333; background:#111; color:#fff;">
+
+        <label for="image" style="font-weight:bold; margin-bottom:4px;">Image</label>
+        <input type="file" id="image" name="image" accept="image/*"
+               style="padding:10px; border-radius:4px; border:1px solid #333; background:#111; color:#fff;">
+
+        <button type="submit" style="background:#730000; color:#fff; padding:10px; border:none; border-radius:4px; cursor:pointer; transition:0.2s;">
+            Create Listing
+        </button>
+    </form>
+    <div class="footer" style="margin-top:32px; text-align:center; color:#777; font-size:14px;">
+        &copy; 2025 Rented. All rights reserved.
+    </div>
+</div>
+{% endblock %}

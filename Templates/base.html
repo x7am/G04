@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Rented{% endblock %}</title>
+  <style>
+    /* ---------------- Global ---------------- */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      padding-top: 80px; /* offset for navbar */
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ---------------- Navbar ---------------- */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #730000;
+      padding: 12px 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      border-bottom: 1px solid #444;
+    }
+    .nav-left { display: flex; align-items: center; gap: 20px; }
+    .navbar a { color: #fff; font-weight: 500; }
+    .navbar a:hover { color: #007bff; }
+    .logo { font-family: 'Arial Black', sans-serif; font-size: 22px; color: #000; }
+
+    /* ---------------- Auth Buttons ---------------- */
+    .auth-buttons {
+      display: flex;
+      gap: 15px;
+      background: #730000;
+      padding: 8px 18px;
+      border-radius: 30px;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+      align-items: center;
+    }
+    .auth-link {
+      background: #171414;
+      color: #fff;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 20px;
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+    .auth-link:hover {
+      transform: scale(1.1);
+      background: #a30000;
+    }
+
+    /* ---------------- User Profile ---------------- */
+    .user-info { display: flex; align-items: center; gap: 8px; position: relative; }
+    .username { font-weight: bold; font-size: 15px; }
+    .profile-pic {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+
+    /* ---------------- Dropdown ---------------- */
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 50px;
+      background: #000;
+      min-width: 200px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 2000;
+    }
+    .dropdown-menu.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .dropdown-menu a {
+      display: block;
+      padding: 12px 20px;
+      color: #fff;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .dropdown-menu a:hover {
+      background: #222;
+      transform: translateX(5px);
+    }
+
+    /* ---------------- Flash Messages ---------------- */
+    .flash-message {
+      padding: 10px 15px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .flash-message.success { background: #28a745; }
+    .flash-message.error   { background: #dc3545; }
+    .flash-message.info    { background: #17a2b8; }
+
+    /* ---------------- Page Layout ---------------- */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <a href="{{ url_for('home') }}" class="logo">Rented</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+      <a href="{{ url_for('about') }}">About</a>
+    </div>
+    <div class="nav-right">
+      {% if session.get('user_id') %}
+        <div class="user-info">
+          <span class="username">{{ user.username }}</span>
+          <img src="{{ url_for('static', filename=user.profile_pic) }}" alt="Profile" class="profile-pic">
+          <div class="dropdown-menu">
+            <a href="{{ url_for('profile') }}">⚙️ Edit Profile</a>
+            <a href="{{ url_for('logout') }}">🚪 Logout</a>
+          </div>
+        </div>
+      {% else %}
+        <div class="auth-buttons">
+          <a href="{{ url_for('login') }}" class="auth-link">Login</a>
+          <a href="{{ url_for('signup') }}" class="auth-link">Sign Up</a>
+        </div>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash-message {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content -->
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script>
+    // Dropdown toggle
+    document.addEventListener("DOMContentLoaded", function() {
+      const userInfo = document.querySelector(".user-info");
+      if (userInfo) {
+        const pic = userInfo.querySelector(".profile-pic");
+        const menu = userInfo.querySelector(".dropdown-menu");
+        pic.addEventListener("click", (e) => {
+          e.stopPropagation();
+          menu.classList.toggle("show");
+        });
+        window.addEventListener("click", () => menu.classList.remove("show"));
+      }
+    });
+  </script>
+</body>
+</html>
