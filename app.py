@@ -619,3 +619,6 @@ if __name__ == "__main__":
             print("Default admin created: username=Admin, password=123")
         print(f"Database created/loaded at: {db_path}")
     app.run(debug=True)
+
+with app.app_context():
+    db.create_all()
