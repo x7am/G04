@@ -15,15 +15,13 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet
 
 
-from flask import Flask
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(
     __name__,
-    template_folder="templates",  # explicitly tell Flask where templates are
-    static_folder="static"        # explicitly tell Flask where static files are
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static")
 )
-
-
 
 # ------------------------
 # CONFIGURATION
