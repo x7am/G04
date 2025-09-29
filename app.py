@@ -122,6 +122,9 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Delete all listings if user is deleted
+    listings = db.relationship("Listing", backref="user", cascade="all, delete-orphan")
+
 class Listing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
@@ -130,7 +133,13 @@ class Listing(db.Model):
     image = db.Column(db.String(300), default="default_listing.png")
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user = db.relationship("User", backref="listings")
+
+    # Delete all rent requests if listing is deleted
+    requests = db.relationship(
+        "RentRequest",
+        backref="parent_listing",   # <-- renamed to avoid conflict
+        cascade="all, delete-orphan"
+    )
 
 class RentRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -138,10 +147,13 @@ class RentRequest(db.Model):
     description = db.Column(db.Text)
     status = db.Column(db.String(50), default="Pending")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     listing_id = db.Column(db.Integer, db.ForeignKey('listing.id'))
     renter_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    listing = db.relationship("Listing", backref="requests")
+
+    # relationships
     renter = db.relationship("User")
+    # ⚠️ removed duplicate `listing = db.relationship(...)`
 
 # ------------------------
 # ROUTES
@@ -328,19 +340,23 @@ def edit_listing(id):
         return redirect(url_for("home"))
     return render_template("edit_listing.html", listing=listing)
 
-@app.route("/listing/<int:id>/delete", methods=["POST", "GET"])
-def delete_listing(id):
+@app.route("/delete/<int:user_id>", methods=["GET", "POST"])
+def delete_user(user_id):
     if "user_id" not in session:
-        flash("You must be logged in to delete a listing.", "error")
         return redirect(url_for("login"))
-    listing = Listing.query.get_or_404(id)
-    if listing.user_id != session["user_id"] and not session.get("is_admin"):
-        flash("You don’t have permission to delete this listing.", "error")
-        return redirect(url_for("view_listing", id=id))
-    db.session.delete(listing)
+
+    admin_user = User.query.get(session["user_id"])
+    if not admin_user.is_admin:
+        return "Unauthorized", 403
+
+    user = User.query.get_or_404(user_id)
+
+    # Cascade delete will handle listings + requests automatically
+    db.session.delete(user)
     db.session.commit()
-    flash("Listing deleted successfully.", "success")
-    return redirect(url_for("home"))
+
+    flash("User and all their information have been deleted successfully!", "success")
+    return redirect(url_for("admin_dashboard"))
 
 # --- Rent Request ---
 @app.route("/listing/<int:id>", methods=["GET", "POST"])
@@ -435,7 +451,19 @@ def approve_request(request_id):
     flash("Request approved! PDF now available.", "success")
     return redirect(url_for("view_listing", id=listing.id))
 
+@app.route('/delete_listing/<int:id>', methods=['POST'])
+def delete_listing(id):
+    listing = Listing.query.get_or_404(id)
 
+    try:
+        db.session.delete(listing)
+        db.session.commit()
+        flash("Listing deleted successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Error deleting listing: " + str(e), "danger")
+
+    return redirect(url_for('home'))  
 
 @app.route("/request_pdf/<int:request_id>")
 def request_pdf(request_id):
@@ -570,21 +598,6 @@ def edit_user(user_id):
         flash("User updated successfully!", "success")
         return redirect(url_for("admin_dashboard"))
     return render_template("edit_user.html", user=user, title="Edit User")
-
-@app.route("/delete/<int:user_id>", methods=["GET", "POST"])
-def delete_user(user_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    admin_user = User.query.get(session["user_id"])
-    if not admin_user.is_admin:
-        return "Unauthorized", 403
-    user = User.query.get_or_404(user_id)
-    if request.method in ["POST", "GET"]:
-        db.session.delete(user)
-        db.session.commit()
-        flash("User deleted successfully!", "success")
-        return redirect(url_for("admin_dashboard"))
-    return redirect(url_for("admin_dashboard"))
 
 # --- Contact & Email ---
 @app.route("/contact")
