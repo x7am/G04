@@ -39,7 +39,7 @@ app.secret_key = os.getenv("FLASK_SECRET", "supersecretkey")
 USE_LOCAL_DB = os.getenv("USE_LOCAL_DB", "True") == "True"
 
 if USE_LOCAL_DB:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///rented.db"
 else:
     DB_HOST = os.getenv("DB_HOST")
     DB_PORT = os.getenv("DB_PORT")
@@ -396,16 +396,17 @@ def edit_request(request_id):
     rent_request = RentRequest.query.get_or_404(request_id)
     if "user_id" not in session or rent_request.renter_id != session["user_id"]:
         return "Unauthorized", 403
+
     if request.method == "POST":
         rent_request.days = int(request.form.get("days", rent_request.days))
         rent_request.description = request.form.get("description", rent_request.description)
-        # If request was rejected, reset to pending for new offer
-        if rent_request.status == "Rejected":
-            rent_request.status = "Pending"
+        rent_request.status = "Pending"  # Reset status on edit
         db.session.commit()
-        flash("Your rental request has been updated and sent as a new offer!", "success")
+        flash("Request updated and reset to Pending.", "success")
         return redirect(url_for("view_listing", id=rent_request.listing_id))
+
     return render_template("edit_request.html", rent_request=rent_request)
+
 
 @app.route("/delete_request/<int:request_id>", methods=["POST"])
 def delete_request(request_id):
@@ -418,19 +419,25 @@ def delete_request(request_id):
     flash("Your rental request has been deleted.", "info")
     return redirect(url_for("view_listing", id=listing_id))
 
-@app.route("/approve_request/<int:request_id>")
+@app.route("/approve_request/<int:request_id>", methods=["POST"])
 def approve_request(request_id):
     rent_request = RentRequest.query.get_or_404(request_id)
-    if "user_id" not in session:
-        return redirect(url_for("login"))
     listing = rent_request.listing
-    if session["user_id"] != listing.user_id:
+
+    if "user_id" not in session or session["user_id"] != listing.user_id:
         return "Unauthorized", 403
+
+    # Decline all other requests
+    for r in listing.requests:
+        if r.id != rent_request.id:
+            r.status = "Declined"
 
     rent_request.status = "Approved"
     db.session.commit()
-    flash("Request approved! PDF is now available for download.", "success")
+    flash("Request approved! PDF now available.", "success")
     return redirect(url_for("view_listing", id=listing.id))
+
+
 
 @app.route("/request_pdf/<int:request_id>")
 def request_pdf(request_id):
@@ -497,18 +504,20 @@ def request_pdf(request_id):
     doc.build(elements)
     return send_file(pdf_path, as_attachment=True)
 
-@app.route("/decline_request/<int:request_id>")
+@app.route("/decline_request/<int:request_id>", methods=["POST"])
 def decline_request(request_id):
     rent_request = RentRequest.query.get_or_404(request_id)
-    if "user_id" not in session:
-        return redirect(url_for("login"))
     listing = rent_request.listing
-    if session["user_id"] != listing.user_id:
+
+    if "user_id" not in session or session["user_id"] != listing.user_id:
         return "Unauthorized", 403
-    rent_request.status = "Rejected"
+
+    rent_request.status = "Declined"
     db.session.commit()
-    flash("Request declined.", "info")
+    flash("Request declined. Approve/Decline buttons are now hidden.", "info")
     return redirect(url_for("view_listing", id=listing.id))
+
+
 
 # --- Admin Routes ---
 @app.route("/admin")
