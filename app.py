@@ -13,7 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet
-
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,9 +30,28 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 instance_folder = os.path.join(basedir, "instance")
 os.makedirs(instance_folder, exist_ok=True)
 
-db_path = os.path.join(instance_folder, "rented.db")
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+load_dotenv()  # loads variables from .env
+
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET", "supersecretkey")
+
+# Choose local or online DB
+USE_LOCAL_DB = os.getenv("USE_LOCAL_DB", "True") == "True"
+
+if USE_LOCAL_DB:
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
+else:
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASS = os.getenv("DB_PASS")
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # use an env var for secret in production
 app.secret_key = os.getenv("FLASK_SECRET", "your-secret-key")
 
@@ -50,8 +69,11 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "cldn gswl pyop reqw")  # ideally f
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 
-# Database
-db = SQLAlchemy(app)
+# Database - single instance (do not create multiple)
+db = SQLAlchemy()
+db.init_app(app)
+
+# expose datetime utilities to Jinja
 app.jinja_env.globals['datetime'] = datetime
 
 # ------------------------
@@ -129,12 +151,11 @@ class RentRequest(db.Model):
 @app.route("/")
 def home():
     listings = Listing.query.order_by(Listing.created_at.desc()).all()
-    
     # Mark listings that are rented (have any approved request)
     for listing in listings:
         listing.is_rented = any(req.status == "Approved" for req in listing.requests)
-
     return render_template("index.html", listings=listings)
+
 # --- Auth Routes ---
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -256,6 +277,11 @@ def create_listing():
         title = request.form["title"]
         description = request.form["description"]
         price = request.form["price"]
+        # try casting price to float; keep existing behaviour if invalid
+        try:
+            price_value = float(price)
+        except Exception:
+            price_value = 0.0
         image_file = request.files.get("image")
         image_filename = None
         if image_file and image_file.filename != "":
@@ -267,7 +293,7 @@ def create_listing():
         new_listing = Listing(
             title=title,
             description=description,
-            price=price,
+            price=price_value,
             image=image_to_store,
             user_id=session["user_id"]
         )
@@ -288,7 +314,11 @@ def edit_listing(id):
     if request.method == "POST":
         listing.title = request.form["title"]
         listing.description = request.form["description"]
-        listing.price = request.form["price"]
+        price = request.form["price"]
+        try:
+            listing.price = float(price)
+        except Exception:
+            pass
         image_file = request.files.get("image")
         if image_file and image_file.filename != "":
             filename = secure_filename(image_file.filename)
@@ -315,8 +345,6 @@ def delete_listing(id):
     return redirect(url_for("home"))
 
 # --- Rent Request ---
-from datetime import datetime
-
 @app.route("/listing/<int:id>", methods=["GET", "POST"])
 def view_listing(id):
     listing = Listing.query.get_or_404(id)
@@ -360,10 +388,8 @@ def view_listing(id):
         listing=listing,
         requests=listing.requests,
         approved_request=approved_request,  # pass to template
-        current_time=datetime.utcnow()       # <--- added this
+        current_time=datetime.utcnow()       # so templates can compute timeago
     )
-
-
 
 @app.route("/edit_request/<int:request_id>", methods=["GET", "POST"])
 def edit_request(request_id):
@@ -469,9 +495,7 @@ def request_pdf(request_id):
     ))
 
     doc.build(elements)
-
     return send_file(pdf_path, as_attachment=True)
-
 
 @app.route("/decline_request/<int:request_id>")
 def decline_request(request_id):
@@ -611,6 +635,9 @@ def inject_user():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+        # print a useful DB path message
+        db_path = app.config.get('SQLALCHEMY_DATABASE_URI')
+        # create default admin if missing
         if not User.query.filter_by(is_admin=True).first():
             admin = User(
                 username="Admin",
