@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit User - Rented</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #FFFFFF;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 0;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: #730000;
+            border-bottom: 1px solid #ddd;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+        }
+        .nav-left, .nav-right { display: flex; align-items: center; }
+        .nav-right a { text-decoration: none; color: #ffffff; margin-left: 15px; font-weight: 500; }
+        .nav-right a:hover { color: #007BFF; }
+        .logo { font-size: 20px; font-weight: bold; color: #fff; text-decoration: none; }
+
+        .container {
+            background-color: #111; /* black box */
+            padding: 32px;
+            border-radius: 8px;
+            width: 400px;
+            margin-top: 120px; /* push below navbar */
+        }
+
+        input { width: 100%; padding: 8px; margin-bottom: 16px; border-radius: 4px; border: none; }
+        button { padding: 10px 16px; border: none; border-radius: 4px; background: #730000; color: #fff; }
+        button:hover { background: #0056b3; }
+        a { color: #730000; text-decoration: none; display: block; margin-top: 16px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="{{ url_for('home') }}" class="logo">Rented</a>
+        </div>
+        <div class="nav-right">
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('signup') }}">Sign Up</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Edit User</h2>
+        <form method="POST">
+            <label>Username</label>
+            <input type="text" name="username" value="{{ user.username }}" required>
+            <label>Password</label>
+            <input type="text" name="password" value="{{ user.password }}">
+            <button type="submit">Save Changes</button>
+            <a href="{{ url_for('admin_dashboard') }}">Back to Dashboard</a>
+        </form>
+    </div>
+</body>
+</html>
