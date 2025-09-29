@@ -14,17 +14,17 @@
         {% for listing in listings %}
         <div class="listing-card">
 
-            <!-- Added by (username + profile picture + time ago) -->
-            <div class="user-info">
-                <div class="user-left">
+            <!-- Listing owner info (with larger profile pic + username) -->
+            <div class="listing-user-info">
+                <div class="listing-user-left">
                     {% if listing.user and listing.user.profile_pic %}
                         <img src="{{ url_for('static', filename=listing.user.profile_pic) }}"
-                             alt="{{ listing.user.username }}'s profile picture" class="profile-pic">
+                             alt="{{ listing.user.username }}'s profile picture" class="listing-profile-pic">
                     {% else %}
                         <img src="{{ url_for('static', filename='profile_pics/default.png') }}"
-                             alt="Default profile picture" class="profile-pic">
+                             alt="Default profile picture" class="listing-profile-pic">
                     {% endif %}
-                    <span class="username">{{ listing.user.username }}</span>
+                    <span class="listing-username">{{ listing.user.username }}</span>
                 </div>
                 <span class="time-ago">{{ time_ago(listing.created_at) }}</span>
             </div>
@@ -33,7 +33,7 @@
             <a href="{{ url_for('view_listing', id=listing.id) }}" class="listing-card-link">
                 <img src="{{ url_for('static', filename='listing_images/' + listing.image) }}" alt="{{ listing.title }}">
                 <h3>{{ listing.title }}</h3>
-                <p class="price">RM {{ listing.price }}</p>
+                <p class="price">RM <strong>{{ listing.price | int }}</strong> / Day</p>
             </a>
 
             <!-- Rented overlay -->
@@ -54,7 +54,7 @@
 <style>
 /* Make container wider */
 .wide-container {
-    max-width: 1400px;
+    max-width: 1680px;
     margin: 0 auto;
     padding: 0 20px;
 }
@@ -62,7 +62,7 @@
 /* Listing grid */
 .listing-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* fewer columns → wider cards */
     gap: 20px;
     margin-top: 24px;
 }
@@ -103,26 +103,31 @@
     margin: 0.25rem 0;
 }
 
-/* User info row */
-.user-info {
+/* Listing user info */
+.listing-user-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
 }
-.user-left {
+.listing-user-left {
     display: flex;
     align-items: center;
 }
-.user-info .profile-pic {
-    width: 28px;
-    height: 28px;
+.listing-profile-pic {
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
-    margin-right: 6px;
+    object-fit: cover;
+    border: 2px solid #333;
+    margin-right: 8px;
 }
-.username {
-    font-weight: 500;
+.listing-username {
+    font-weight: bold;
+    font-size: 1.2rem;
 }
+
+/* Time ago */
 .time-ago {
     font-size: 0.8rem;
     color: #aaa;

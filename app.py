@@ -315,6 +315,8 @@ def delete_listing(id):
     return redirect(url_for("home"))
 
 # --- Rent Request ---
+from datetime import datetime
+
 @app.route("/listing/<int:id>", methods=["GET", "POST"])
 def view_listing(id):
     listing = Listing.query.get_or_404(id)
@@ -357,8 +359,10 @@ def view_listing(id):
         "view_listing.html",
         listing=listing,
         requests=listing.requests,
-        approved_request=approved_request  # pass to template
+        approved_request=approved_request,  # pass to template
+        current_time=datetime.utcnow()       # <--- added this
     )
+
 
 
 @app.route("/edit_request/<int:request_id>", methods=["GET", "POST"])
@@ -619,6 +623,3 @@ if __name__ == "__main__":
             print("Default admin created: username=Admin, password=123")
         print(f"Database created/loaded at: {db_path}")
     app.run(debug=True)
-
-with app.app_context():
-    db.create_all()
