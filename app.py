@@ -50,8 +50,6 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # use an env var for secret in production
 app.secret_key = os.getenv("FLASK_SECRET", "your-secret-key")
 
