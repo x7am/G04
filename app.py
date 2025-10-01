@@ -22,9 +22,9 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static")
 )
 
-# ------------------------
-# CONFIGURATION
-# ------------------------
+# ------------- #
+# CONFIGURATION #
+# ------------- #
 basedir = os.path.abspath(os.path.dirname(__file__))
 instance_folder = os.path.join(basedir, "instance")
 os.makedirs(instance_folder, exist_ok=True)

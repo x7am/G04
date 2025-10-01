@@ -9,13 +9,9 @@
   <div class="owner-header">
     <div class="user-left">
       {% if listing.user and listing.user.profile_pic %}
-        <img src="{{ url_for('static', filename=listing.user.profile_pic) }}" 
-             alt="{{ listing.user.username }}'s profile picture" 
-             class="listing-profile-pic">
+        <img src="{{ url_for('static', filename=listing.user.profile_pic) }}" alt="{{ listing.user.username }}'s profile picture" class="listing-profile-pic">
       {% else %}
-        <img src="{{ url_for('static', filename='profile_pics/default.png') }}" 
-             alt="Default profile picture" 
-             class="listing-profile-pic">
+        <img src="{{ url_for('static', filename='profile_pics/default.png') }}" alt="Default profile picture" class="listing-profile-pic">
       {% endif %}
       <span class="listing-username">{{ listing.user.username }}</span>
     </div>
@@ -24,8 +20,7 @@
   <!-- Listing Info -->
   <div class="listing-info">
     <div class="listing-image">
-      <img src="{{ url_for('static', filename='listing_images/' ~ (listing.image or 'default_listing.png')) }}" 
-           alt="{{ listing.title }}">
+      <img src="{{ url_for('static', filename='listing_images/' ~ (listing.image or 'default_listing.png')) }}" alt="{{ listing.title }}">
     </div>
     <div class="listing-details">
       <div class="listing-text">
@@ -33,6 +28,7 @@
         <p>{{ listing.description }}</p>
         <p>RM <strong>{{ listing.price | int }}</strong> / Day</p>
       </div>
+
       {% if user and (user.id == listing.user_id or user.is_admin) %}
       <div class="listing-buttons-bottom">
         <a href="{{ url_for('edit_listing', id=listing.id) }}" class="btn-edit">✏️ Edit Listing</a>
@@ -48,22 +44,26 @@
 
   <!-- Rent Form for non-owners -->
   {% if user and user.id != listing.user_id and not approved_request %}
-    {% set existing_user_request = requests | selectattr("renter_id", "equalto", user.id) | list %}
-    {% if not existing_user_request %}
-    <div class="rent-form">
-      <h3>Send Rental Request</h3>
-      <form method="POST">
+  {% set existing_user_request = requests | selectattr("renter_id", "equalto", user.id) | list %}
+  {% if not existing_user_request %}
+  <div class="rent-form">
+    <h3>Send Rental Request</h3>
+    <form method="POST">
+      <div class="form-row">
         <label for="days">Number of Days</label>
         <input type="number" id="days" name="days" min="1" required>
+      </div>
+      
+      <div class="form-row">
         <label for="description">Contact Number:</label>
-        <textarea id="description" name="description" rows="5"></textarea>
-        <div class="rent-form-footer">
-          <button type="submit">Send Request</button>
-        </div>
-      </form>
-    </div>
-    {% endif %}
+        <textarea id="description" name="description" rows="3"></textarea>
+      </div>
+      
+      <button type="submit" class="btn-submit">Send Request</button>
+    </form>
+  </div>
   {% endif %}
+{% endif %}
 
   <!-- Approved Request Info -->
   {% if approved_request %}
@@ -75,6 +75,7 @@
       <p><strong>Price per day:</strong> RM {{ listing.price }}</p>
       <p><strong>Total:</strong> RM {{ listing.price * req.days }}</p>
       <p><strong>Contact Number:</strong> {{ req.description or 'N/A' }}</p>
+
       {% if user and (user.id == req.renter_id or user.id == listing.user_id) %}
         <a href="{{ url_for('request_pdf', request_id=req.id) }}" class="btn-pdf">📄 Download PDF</a>
       {% endif %}
@@ -82,87 +83,250 @@
   {% endif %}
 
   <!-- Rental Requests -->
-{% if not approved_request %}
-<div class="rental-requests">
-  <h3>Rental Requests</h3>
-  {% if requests %}
-    {% for req in requests %}
-    <div class="request-card">
-      <div class="request-info">
-        <strong>{{ req.renter.username if req.renter else 'N/A' }}</strong> requested <strong>{{ req.days }}</strong> days
-        {% if req.created_at %}
-          {% set diff = current_time - req.created_at %}
-          {% if diff.total_seconds() < 3600 %}
-            <small class="request-time">{{ (diff.total_seconds() // 60)|int }} minutes ago</small>
-          {% elif diff.total_seconds() < 86400 %}
-            <small class="request-time">{{ (diff.total_seconds() // 3600)|int }} hours ago</small>
-          {% else %}
-            <small class="request-time">{{ (diff.total_seconds() // 86400)|int }} days ago</small>
+  {% if not approved_request %}
+  <div class="rental-requests">
+    <h3>Rental Requests</h3>
+    {% if requests %}
+      {% for req in requests %}
+      <div class="request-card">
+        <div class="request-info">
+          <strong>{{ req.renter.username if req.renter else 'N/A' }}</strong> requested <strong>{{ req.days }}</strong> days
+          {% if req.created_at %}
+            {% set diff = current_time - req.created_at %}
+            {% if diff.total_seconds() < 3600 %}
+              <small class="request-time">{{ (diff.total_seconds() // 60)|int }} minutes ago</small>
+            {% elif diff.total_seconds() < 86400 %}
+              <small class="request-time">{{ (diff.total_seconds() // 3600)|int }} hours ago</small>
+            {% else %}
+              <small class="request-time">{{ (diff.total_seconds() // 86400)|int }} days ago</small>
+            {% endif %}
           {% endif %}
-        {% endif %}
-        {% if req.description %}
-          <p><em>Contact Number:</em> {{ req.description }}</p>
-        {% endif %}
-        <p><strong>Status:</strong> {{ req.status }}</p>
+          {% if req.description %}
+            <p><em>Contact Number:</em> {{ req.description }}</p>
+          {% endif %}
+          <p><strong>Status:</strong> {{ req.status }}</p>
+        </div>
+
+        <div class="request-actions">
+          {% if user and user.id == req.renter_id %}
+            <a href="{{ url_for('edit_request', request_id=req.id) }}" class="btn-edit">✏️ Edit</a>
+            <form action="{{ url_for('delete_request', request_id=req.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn-delete">🗑️ Delete</button>
+            </form>
+          {% endif %}
+
+          {% if user and user.id == listing.user_id and req.status != 'Declined' %}
+            <form action="{{ url_for('approve_request', request_id=req.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn-approve">✅ Approve</button>
+            </form>
+            <form action="{{ url_for('decline_request', request_id=req.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn-decline">❌ Decline</button>
+            </form>
+          {% endif %}
+        </div>
       </div>
-      <div class="request-actions">
-        {% if user and user.id == req.renter_id %}
-        <a href="{{ url_for('edit_request', request_id=req.id) }}" class="btn-edit">✏️ Edit</a>
-        <form action="{{ url_for('delete_request', request_id=req.id) }}" method="POST" style="display:inline;">
-          <button type="submit" class="btn-delete">🗑️ Delete</button>
-        </form>
-        {% endif %}
-        {% if user and user.id == listing.user_id and req.status != 'Declined' %}
-        <form action="{{ url_for('approve_request', request_id=req.id) }}" method="POST" style="display:inline;">
-          <button type="submit" class="btn-approve">✅ Approve</button>
-        </form>
-        <form action="{{ url_for('decline_request', request_id=req.id) }}" method="POST" style="display:inline;">
-          <button type="submit" class="btn-decline">❌ Decline</button>
-        </form>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
-  {% else %}
-    <p>No requests yet.</p>
+      {% endfor %}
+    {% else %}
+      <p>No requests yet.</p>
+    {% endif %}
+  </div>
   {% endif %}
-</div>
-{% endif %}
+
 </div>
 
 <style>
 /* General container */
-.wide-container { max-width: 900px; margin: 0 auto; padding: 0 20px; color: #fff; }
-.owner-header { display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 24px; background: #111; padding: 16px; border-radius: 12px; }
-.listing-profile-pic { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #333; }
-.listing-username { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; }
-.listing-info { display: flex; gap: 24px; flex-wrap: wrap; align-items: stretch; background: #111; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
-.listing-image { flex: 3; min-width: 250px; text-align: center; }
-.listing-image img { width: 100%; height: auto; border-radius: 8px; border: 1px solid #333; }
-.listing-details { flex: 2; min-width: 250px; display: flex; flex-direction: column; justify-content: space-between; }
+.wide-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+  color: #fff;
+}
+
+.owner-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  background: #111;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.listing-profile-pic {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #333;
+}
+
+.listing-username {
+  font-weight: bold;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+
+.listing-info {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: stretch;
+  background: #111;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.listing-image {
+  flex: 3;
+  min-width: 250px;
+  text-align: center;
+}
+
+.listing-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.listing-details {
+  flex: 2;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .listing-text h2 { margin-bottom: 16px; }
 .listing-text p { margin-bottom: 8px; }
-.listing-buttons-bottom { display: flex; gap: 16px; justify-content: flex-end; }
-.btn-edit, .btn-delete { display: flex; align-items: center; justify-content: center; height: 42px; padding: 10px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; }
+
+.listing-buttons-bottom {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+}
+
+.btn-edit,
+.btn-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .btn-edit { background: #ffc107; color: #000; }
 .btn-delete { background: #dc3545; color: #fff; }
 
 /* Rent form */
-.textarea { resize: none; }
-.rent-form, .approved-request, .rental-requests { background: #111; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
-.rent-form label, .rent-form input, .rent-form textarea, .rent-form button { display: block; width: 100%; margin-bottom: 16px; }
-.rent-form input, .rent-form textarea { background: #171414; color: #fff; border-radius: 8px; border: 1px solid #333; padding: 10px; }
-.rent-form-footer { display: flex; justify-content: space-between; align-items: center; }
+.rent-form,
+.approved-request,
+.rental-requests {
+  background: #111;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.rent-form form { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+}
+
+.form-row { 
+  display: grid; 
+  grid-template-columns: 150px 1fr; 
+  gap: 12px; 
+  align-items: center; 
+}
+
+.rent-form input, 
+.rent-form textarea { 
+  background: #171414; 
+  color: #fff; 
+  border-radius: 8px; 
+  padding: 10px; 
+  width: 100%; 
+  box-sizing: border-box; 
+  resize: none; /* 🔥 prevents manual resizing */
+  overflow: hidden; /* 🔥 only grows when content forces it */
+}
+
 .request-time { font-size: 0.9rem; color: #aaa; }
-.rent-form button { background: #28a745; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+.rent-form button {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  text-align: center;
+}
 
 /* Rental request cards */
-.request-card { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; background: #222; border-radius: 10px; margin-bottom: 16px; }
+.request-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  background: #222;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
 .request-info { color: #ccc; }
-.request-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn-approve, .btn-decline { display: flex; align-items: center; justify-content: center; height: 42px; padding: 10px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; }
-.btn-approve { background: #28a745; color: #fff; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
-.btn-decline { background: #dc3545; color: #fff; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
-.btn-pdf { background: #17a2b8; color: #fff; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px; }
-</style>
+.request-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-approve,
+.btn-decline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-approve {
+  background: #28a745;
+  color: #fff;
+}
+
+.btn-decline {
+  background: #dc3545;
+  color: #fff;
+}
+
+.btn-pdf {
+  background: #17a2b8;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  display: inline-block;
+  margin-top: 10px;
+}
+</style> 
 {% endblock %}
