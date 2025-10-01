@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import smtplib
 from email.mime.text import MIMEText
-# reportlab (used for PDF generation)
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -36,22 +35,24 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "supersecretkey")
 
 # Choose local or online DB
-USE_LOCAL_DB = os.getenv("USE_LOCAL_DB", "True") == "True"
+import os
 
-if USE_LOCAL_DB:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///rented.db"
+# Detect if running on Render (DATABASE_URL is provided by Render automatically)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    # Render (or production): use PostgreSQL
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://")
 else:
-    DB_HOST = os.getenv("DB_HOST")
-    DB_PORT = os.getenv("DB_PORT")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASS = os.getenv("DB_PASS")
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    # Local Flask dev: use SQLite
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'rented.db')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# use an env var for secret in production
+# Use a secure secret in production
 app.secret_key = os.getenv("FLASK_SECRET", "your-secret-key")
+
 
 # Upload folders
 UPLOAD_FOLDER = "static/profile_pics"
@@ -147,7 +148,7 @@ class RentRequest(db.Model):
     description = db.Column(db.Text)
     status = db.Column(db.String(50), default="Pending")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    listing = db.relationship('Listing', backref='rent_requests', lazy=True)
     listing_id = db.Column(db.Integer, db.ForeignKey('listing.id'))
     renter_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
